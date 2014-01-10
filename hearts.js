@@ -33,6 +33,7 @@ function newGame() {
   var leadSuit = null;
   var turnIndex;
   var mandatoryNextTurn;
+  var heartsAreBroken = false;
   function makePlayCardAction(player, card) {
     var cardName = card.profile.rankName + card.profile.suitName;
     return new crage.Action(game, player, {text: cardName}, function() {
@@ -41,6 +42,9 @@ function newGame() {
       turnIndex = (turnIndex + 1) % 4;
       if (leadSuit == null) {
         leadSuit = card.profile.suitName;
+      }
+      if (card.profile.suitName === "h") {
+        heartsAreBroken = true;
       }
       if (isTrickComplete()) {
         // make a confirmation action
@@ -85,34 +89,28 @@ function newGame() {
     });
   });
 
-  function getCardsInSuits(player, suitNames) {
-    var result = [];
-    player.hand.getCardsInOrder().forEach(function(card) {
-      if (suitNames.indexOf(card.profile.suitName) !== -1) {
-        result.push(card);
-      }
-    });
-    return result;
-  }
-
   function getActions() {
     if (mandatoryNextTurn != null) return [mandatoryNextTurn];
     var result = [];
     var player = game.players[turnIndex];
+    function makeActionsForSuits(suitNames) {
+      player.hand.getCardsInOrder().forEach(function(card) {
+        if (suitNames.indexOf(card.profile.suitName) !== -1) {
+          result.push(makePlayCardAction(player, card));
+        }
+      });
+    }
     if (leadSuit != null) {
-      getCardsInSuits(player, [leadSuit]).forEach(function(card) {
-        result.push(makePlayCardAction(player, card));
-      });
-    }
-    if (result.length === 0) {
-      getCardsInSuits(player, ["c", "d", "s"]).forEach(function(card) {
-        result.push(makePlayCardAction(player, card));
-      });
-    }
-    if (result.length === 0) {
-      getCardsInSuits(player, ["h"]).forEach(function(card) {
-        result.push(makePlayCardAction(player, card));
-      });
+      makeActionsForSuits([leadSuit]);
+      if (result.length === 0) {
+        makeActionsForSuits(["c", "d", "s", "h"]);
+      }
+    } else {
+      if (heartsAreBroken) {
+        makeActionsForSuits(["c", "d", "s", "h"]);
+      } else {
+        makeActionsForSuits(["c", "d", "s"]);
+      }
     }
     return result;
   }
