@@ -1,9 +1,10 @@
 
 module.exports.Game = Game;
-function Game() {
+function Game(getActionsFunc) {
   this.cards = [];
   this.locations = [];
   this.players = [];
+  this.getActions = getActionsFunc;
 }
 Game.prototype.newPlayer = function(profile) {
   var player = new Player(this, profile);
@@ -34,7 +35,6 @@ function Card(game, profile, location) {
   this.location = location;
 }
 
-// location types
 module.exports.Location = Location;
 function Location(game, profile) {
   this.game = game;
@@ -65,6 +65,14 @@ Location.prototype.getCardsInOrder = function() {
   });
   return cards;
 };
+
+module.exports.Action = Action;
+function Action(game, player, data, func) {
+  this.game = game;
+  this.player = player;
+  this.data = data;
+  this.func = func;
+}
 
 // boring utility function
 module.exports.operatorCompare = operatorCompare;
