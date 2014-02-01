@@ -1,5 +1,3 @@
-#!/usr/bin/env node
-
 process.stdin.setEncoding("utf8");
 
 var gameModule = require(process.argv[2]);
