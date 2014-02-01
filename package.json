@@ -1,0 +1,19 @@
+{
+  "name": "rage-spell",
+  "version": "0.0.0",
+  "description": "rage-spell",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/thejoshwolfe/rage-spell.git"
+  },
+  "scripts": {
+    "build": "npm install && nodejs ./task.js build",
+    "dev": "npm install && nodejs ./task.js dev"
+  },
+  "author": "Josh Wolfe <thejoshwolfe@gmail.com>",
+  "license": "BSD",
+  "readmeFilename": "README.md",
+  "dependencies": {
+    "watchify": "~0.5.5"
+  }
+}
