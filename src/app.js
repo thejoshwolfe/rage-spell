@@ -11,6 +11,15 @@ var cardHeight = cardWidth*3.5/2.5;
 // corner radius is 1/20 the width of the card
 var cornerRadius = cardWidth/20;
 
+var spades = "\u2660";
+var clubs = "\u2663";
+var hearts = "\u2665";
+var diamonds = "\u2666";
+var cards = [];
+[spades, clubs, hearts, diamonds].forEach(function(suit, i) {
+  cards.push({x:i*cardWidth, y:0, suit: suit});
+});
+
 render();
 function render() {
   var context = canvas.getContext("2d");
@@ -20,8 +29,10 @@ function render() {
   context.fillStyle = "#050";
   context.fillRect(0, 0, 3, 2);
 
-  context.fillStyle = "#fff";
-  roundedCornerRect(context, 1, 1, cardWidth, cardHeight, cornerRadius);
+  cards.forEach(function(card) {
+    context.fillStyle = "#fff";
+    roundedCornerRect(context, card.x, card.y, cardWidth, cardHeight, cornerRadius);
+  });
 
   context.restore();
   requestAnimationFrame(render);
