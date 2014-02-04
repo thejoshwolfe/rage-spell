@@ -1,8 +1,8 @@
 var canvas = document.getElementById("canvas");
 
 // for simplicity and scalability, we scale the units to 3x2
-var canvasWidth = 3;
-var canvasHeight = 2;
+var canvasWidth = 300;
+var canvasHeight = 200;
 
 // want to fit 20 cards across
 var cardWidth = canvasWidth/20;
@@ -10,11 +10,17 @@ var cardWidth = canvasWidth/20;
 var cardHeight = cardWidth*3.5/2.5;
 // corner radius is 1/20 the width of the card
 var cornerRadius = cardWidth/20;
+var fontSize = Math.floor(cardHeight/10);
 
 var spades = "\u2660";
 var clubs = "\u2663";
 var hearts = "\u2665";
 var diamonds = "\u2666";
+var suitColor = {};
+suitColor[spades] = "#000";
+suitColor[clubs] = "#000";
+suitColor[hearts] = "#f00";
+suitColor[diamonds] = "#f00";
 var cards = [];
 [spades, clubs, hearts, diamonds].forEach(function(suit, i) {
   cards.push({x:i*cardWidth, y:0, suit: suit});
@@ -25,13 +31,17 @@ function render() {
   var context = canvas.getContext("2d");
   context.save();
 
-  context.scale(canvas.width/3, canvas.height/2);
+  context.scale(canvas.width/canvasWidth, canvas.height/canvasHeight);
   context.fillStyle = "#050";
-  context.fillRect(0, 0, 3, 2);
+  context.fillRect(0, 0, canvasWidth, canvasHeight);
 
   cards.forEach(function(card) {
     context.fillStyle = "#fff";
     roundedCornerRect(context, card.x, card.y, cardWidth, cardHeight, cornerRadius);
+
+    context.fillStyle = suitColor[card.suit];
+    context.font = fontSize + "pt sans-serif";
+    context.fillText(card.suit, card.x+cornerRadius, card.y+cornerRadius+fontSize);
   });
 
   context.restore();
