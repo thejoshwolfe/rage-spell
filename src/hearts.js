@@ -13,9 +13,9 @@ function newGame() {
   var game = new crage.Game(getActions);
   playerProfiles.forEach(function(profile) {
     var player = game.newPlayer(profile);
-    player.hand = game.newLocation();
-    player.playSlot = game.newLocation();
-    player.keepPile = game.newLocation();
+    player.hand = game.newLocation(player);
+    player.playSlot = game.newLocation(true);
+    player.keepPile = game.newLocation(true);
   });
 
   var deck = game.newLocation();

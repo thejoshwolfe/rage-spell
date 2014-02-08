@@ -12,11 +12,13 @@ var cardWidth = canvasWidth/20;
 var cardHeight = cardWidth*3.5/2.5;
 // corner radius is 1/20 the width of the card
 var cornerRadius = cardWidth/20;
+var borderWidth = cornerRadius;
 var fontSize = Math.floor(cardHeight/4);
 function realToFakeX(realX) { return realX / canvas.width * canvasWidth; }
 function realToFakeY(realY) { return realY / canvas.height * canvasHeight; }
 
 var game = hearts.newGame();
+var theHuman = game.players[0];
 (function() {
   // where should the locations be rendered?
   var z = 0;
@@ -57,15 +59,9 @@ var game = hearts.newGame();
 })();
 
 var actions;
-var actionCards;
 refreshActions();
 function refreshActions() {
   actions = game.getActions();
-  actionCards = actions.filter(function(action) {
-    return action.player === game.players[0];
-  }).map(function(action) {
-    return action.data.card;
-  });
   render();
 }
 function refreshLocationSettings(locationGroup) {
@@ -102,37 +98,57 @@ function render() {
   cards.sort(function(cardA, cardB) {
     return crage.operatorCompare(cardA.location.z, cardB.location.z);
   });
+  var actionCards = actions.filter(function(action) {
+    return action.player === theHuman;
+  }).map(function(action) {
+    return action.data.card;
+  });
   cards.forEach(function(card) {
-    renderCard(context, card);
+    var enabled = actionCards.indexOf(card) !== -1;
+    var visibility = card.location.group.visibility;
+    var faceUp = visibility === true || visibility === theHuman;
+    renderCard(context, card, enabled, faceUp);
   });
 
   context.restore();
 }
-function renderCard(context, card) {
+function renderCard(context, card, enabled, faceUp) {
   if (card.location.x == null) return;
 
   context.save();
 
+  roundedCornerRectPath(context,
+      card.location.x, card.location.y,
+      cardWidth, cardHeight,
+      cornerRadius);
   context.fillStyle = "#fff";
-  roundedCornerRectPath(context, card.location.x, card.location.y, cardWidth, cardHeight, cornerRadius);
-  context.clip();
   context.fill();
 
-  context.fillStyle = card.profile.suit.color;
-  context.font = fontSize + "pt sans-serif";
-  var x = card.location.x+cornerRadius;
-  var y = card.location.y+cornerRadius;
-  y += fontSize;
-  context.fillText(card.profile.rank.name, x, y);
-  y += fontSize;
-  context.fillText(card.profile.suit.symbol, x, y);
+  if (faceUp) {
+    context.fillStyle = card.profile.suit.color;
+    context.font = fontSize + "pt sans-serif";
+    var x = card.location.x+cornerRadius;
+    var y = card.location.y+cornerRadius;
+    y += fontSize;
+    context.fillText(card.profile.rank.name, x, y);
+    y += fontSize;
+    context.fillText(card.profile.suit.symbol, x, y);
 
-  if (actionCards.indexOf(card) === -1) {
-    // can't click this
-    context.globalAlpha = 0.3;
-    context.fillStyle = "#000";
+    if (!enabled) {
+      context.globalAlpha = 0.3;
+      context.fillStyle = "#000";
+      context.fill();
+    }
+  } else {
+    // render the back of a card
+    roundedCornerRectPath(context,
+        card.location.x + borderWidth, card.location.y + borderWidth,
+        cardWidth - borderWidth*2, cardHeight - borderWidth*2,
+        cornerRadius);
+    context.fillStyle = "#aaf";
     context.fill();
   }
+
 
   context.restore();
 }
@@ -166,7 +182,7 @@ function resize() {
 canvas.addEventListener("mousedown", function(event) {
   if (actions[0].length === 0) return; // game over
   var clickedAction;
-  if (actions[0].player === game.players[0]) {
+  if (actions[0].player === theHuman) {
     // human clicks
     var x = realToFakeX(event.layerX);
     var y = realToFakeY(event.layerY);
