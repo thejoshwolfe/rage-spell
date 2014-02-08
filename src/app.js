@@ -4,7 +4,7 @@ var canvas = document.getElementById("canvas");
 
 // all coordinates are scaled to these dimensions
 var canvasWidth = 300;
-var canvasHeight = 200;
+var canvasHeight = 300;
 
 // want to fit 20 cards across
 var cardWidth = canvasWidth/20;
@@ -17,30 +17,68 @@ function realToFakeX(realX) { return realX / canvas.width * canvasWidth; }
 function realToFakeY(realY) { return realY / canvas.height * canvasHeight; }
 
 var game = hearts.newGame();
+(function() {
+  var z = 0;
+  game.players.forEach(function(player, playerIndex) {
+    player.hand.layout = rotate({
+      dx: cardWidth*2/3,
+      x: canvasWidth/2,
+      dy: 0,
+      y: canvasHeight*(1/2 + 5/16),
+      z: z++,
+    });
+    player.playSlot.layout = rotate({
+      dx: 0,
+      x: canvasWidth/2,
+      dy: 0,
+      y: canvasHeight*(1/2 + 1/8),
+      z: z++,
+    });
+    player.keepPile.layout = rotate({
+      dx: cardWidth/3,
+      x: canvasWidth/2,
+      dy: 0,
+      y: canvasHeight*(1/2 + 7/16),
+      z: z++,
+    });
+    function rotate(layout) {
+      for (var i = 0; i < playerIndex; i++) {
+        var dx = layout.dx;
+        layout.dx = layout.dy;
+        layout.dy = dx;
+        var x = layout.x - canvasWidth/2;
+        layout.x = layout.y;
+        layout.y = canvasWidth/2 - x;
+      }
+      return layout;
+    }
+  });
+})();
 var actions, actionCards;
 refreshActions();
 function refreshActions() {
   actions = game.getActions();
   actionCards = actions.map(function(action) { return action.data.card; });
-  var z = 0;
-  game.players.forEach(function(player, playerIndex) {
-    player.hand.getCardsInOrder().forEach(function(card, cardIndex) {
-      card.location.x = cardIndex * cardWidth;
-      card.location.y = playerIndex * cardHeight;
-      card.location.z = z++;
-    });
-    player.playSlot.getCards().forEach(function(card) {
-      card.location.x = 13 * cardWidth;
-      card.location.y = playerIndex * cardHeight;
-      card.location.z = z++;
-    });
-    player.keepPile.getCardsInOrder().forEach(function(card, cardIndex) {
-      card.location.x = (14 + cardIndex * 6/35) * cardWidth;
-      card.location.y = playerIndex * cardHeight;
-      card.location.z = z++;
-    });
-  });
+  game.locations.forEach(refreshLocationSettings);
   render();
+}
+function refreshLocationSettings(locationGroup) {
+  if (locationGroup.layout == null) return;
+  var cards = locationGroup.getCardsInOrder();
+  var dx = locationGroup.layout.dx;
+  var  x = locationGroup.layout.x - dx * cards.length / 2;
+  var dy = locationGroup.layout.dy;
+  var  y = locationGroup.layout.y - dy * cards.length / 2;
+  var dz = 1/cards.length;
+  var  z = locationGroup.layout.z;
+  cards.forEach(function(card) {
+    card.location.x = x - cardWidth/2;
+    card.location.y = y - cardHeight/2;
+    card.location.z = z;
+    x += dx;
+    y += dy;
+    z += dz;
+  });
 }
 
 render();
@@ -130,7 +168,7 @@ canvas.addEventListener("mousedown", function(event) {
     return true;
   });
   clickedActions.sort(function(actionA, actionB) {
-    return grage.operatorCompare(actionA.data.card.location.z, actionB.data.card.location.z);
+    return crage.operatorCompare(actionA.data.card.location.z, actionB.data.card.location.z);
   });
   var clickedAction = clickedActions[clickedActions.length - 1];
   if (clickedAction == null) return;
