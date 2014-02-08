@@ -40,6 +40,7 @@ function refreshActions() {
       card.location.z = z++;
     });
   });
+  render();
 }
 
 render();
@@ -60,7 +61,6 @@ function render() {
   });
 
   context.restore();
-  requestAnimationFrame(render);
 }
 function renderCard(context, card) {
   if (card.location.x == null) return;
@@ -114,6 +114,7 @@ function resize() {
     canvas.style.left = ((window.innerWidth - canvas.width) / 2) + "px";
     canvas.style.top = "0px";
   }
+  render();
 }
 
 canvas.addEventListener("mousedown", function(event) {
