@@ -19,12 +19,12 @@ function newGame() {
   });
 
   var deck = game.newLocation();
-  frenchDeck.new52Cards(game, deck);
+  frenchDeck.new52Cards(game, {group: deck});
 
   // deal
   deck.shuffle();
   deck.getCardsInOrder().forEach(function(card, index) {
-    card.location = game.players[index % 4].hand;
+    card.location = {group: game.players[index % 4].hand};
   });
   game.players.forEach(function(player) {
     player.hand.sort(frenchDeck.compareAceHigh);
@@ -37,7 +37,7 @@ function newGame() {
   function makePlayCardAction(player, card) {
     return new crage.Action(game, player, {card: card}, function() {
       mandatoryNextTurn = null;
-      card.location = player.playSlot;
+      card.location = {group: player.playSlot};
       turnIndex = (turnIndex + 1) % 4;
       if (leadSuit == null) {
         leadSuit = card.profile.suit.id;
@@ -63,7 +63,10 @@ function newGame() {
           });
           // yoink
           game.players.forEach(function(player) {
-            getPlayedCard(player).location = takerPlayer.keepPile;
+            getPlayedCard(player).location = {
+              group: takerPlayer.keepPile,
+              index: takerPlayer.keepPile.getCards().length,
+            };
           });
           leadSuit = null;
         });

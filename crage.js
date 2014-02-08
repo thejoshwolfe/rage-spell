@@ -43,25 +43,25 @@ function Location(game, profile) {
 Location.prototype.getCards = function() {
   var self = this;
   return self.game.cards.filter(function(card) {
-    return card.location === self;
+    return card.location.group === self;
   });
 };
 Location.prototype.sort = function(compare) {
   var cards = this.getCards();
   cards.sort(compare);
   cards.forEach(function(card, index) {
-    card.locationIndex = index;
+    card.location.index = index;
   });
 };
 Location.prototype.shuffle = function() {
   this.getCards().forEach(function(card) {
-    card.locationIndex = Math.random();
+    card.location.index = Math.random();
   });
 };
 Location.prototype.getCardsInOrder = function() {
   var cards = this.getCards();
   cards.sort(function(a, b) {
-    return operatorCompare(a.locationIndex, b.locationIndex);
+    return operatorCompare(a.location.index, b.location.index);
   });
   return cards;
 };

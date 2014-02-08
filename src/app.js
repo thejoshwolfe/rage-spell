@@ -25,10 +25,19 @@ function refreshActions() {
   var z = 0;
   game.players.forEach(function(player, playerIndex) {
     player.hand.getCardsInOrder().forEach(function(card, cardIndex) {
-      card.locationX = cardIndex * cardWidth;
-      card.locationY = playerIndex * cardHeight;
-      card.locationZ = z;
-      z++;
+      card.location.x = cardIndex * cardWidth;
+      card.location.y = playerIndex * cardHeight;
+      card.location.z = z++;
+    });
+    player.playSlot.getCards().forEach(function(card) {
+      card.location.x = 13 * cardWidth;
+      card.location.y = playerIndex * cardHeight;
+      card.location.z = z++;
+    });
+    player.keepPile.getCardsInOrder().forEach(function(card, cardIndex) {
+      card.location.x = (14 + cardIndex * 6/35) * cardWidth;
+      card.location.y = playerIndex * cardHeight;
+      card.location.z = z++;
     });
   });
 }
@@ -42,40 +51,44 @@ function render() {
   context.fillStyle = "#050";
   context.fillRect(0, 0, canvasWidth, canvasHeight);
 
-  game.players.forEach(function(player, playerIndex) {
-    player.hand.getCardsInOrder().forEach(function(card, cardIndex) {
-      context.save();
-
-      drawCard(context, card);
-
-      if (actionCards.indexOf(card) === -1) {
-        // can't click this
-        context.globalAlpha = 0.3;
-        context.fillStyle = "#000";
-        context.fill();
-      }
-
-      context.restore();
-    });
+  var cards = game.cards.slice(0);
+  cards.sort(function(cardA, cardB) {
+    return crage.operatorCompare(cardA.location.z, cardB.location.z);
+  });
+  cards.forEach(function(card) {
+    renderCard(context, card);
   });
 
   context.restore();
   requestAnimationFrame(render);
 }
-function drawCard(context, card) {
+function renderCard(context, card) {
+  if (card.location.x == null) return;
+
+  context.save();
+
   context.fillStyle = "#fff";
-  roundedCornerRectPath(context, card.locationX, card.locationY, cardWidth, cardHeight, cornerRadius);
+  roundedCornerRectPath(context, card.location.x, card.location.y, cardWidth, cardHeight, cornerRadius);
   context.clip();
   context.fill();
 
   context.fillStyle = card.profile.suit.color;
   context.font = fontSize + "pt sans-serif";
-  var x = card.locationX+cornerRadius;
-  var y = card.locationY+cornerRadius;
+  var x = card.location.x+cornerRadius;
+  var y = card.location.y+cornerRadius;
   y += fontSize;
   context.fillText(card.profile.rank.name, x, y);
   y += fontSize;
   context.fillText(card.profile.suit.symbol, x, y);
+
+  if (actionCards.indexOf(card) === -1) {
+    // can't click this
+    context.globalAlpha = 0.3;
+    context.fillStyle = "#000";
+    context.fill();
+  }
+
+  context.restore();
 }
 function roundedCornerRectPath(context, x, y, width, height, radius) {
   context.beginPath();
@@ -109,14 +122,14 @@ canvas.addEventListener("mousedown", function(event) {
   var clickedActions = actions.filter(function(action) {
     var card = action.data.card;
     if (card == null) return true;
-    if (x < card.locationX) return false;
-    if (y < card.locationY) return false;
-    if (card.locationX + cardWidth < x) return false;
-    if (card.locationY + cardHeight < y) return false;
+    if (x < card.location.x) return false;
+    if (y < card.location.y) return false;
+    if (card.location.x + cardWidth < x) return false;
+    if (card.location.y + cardHeight < y) return false;
     return true;
   });
   clickedActions.sort(function(actionA, actionB) {
-    return grage.operatorCompare(actionA.data.card.locationZ, actionB.data.card.locationZ);
+    return grage.operatorCompare(actionA.data.card.location.z, actionB.data.card.location.z);
   });
   var clickedAction = clickedActions[clickedActions.length - 1];
   if (clickedAction == null) return;
