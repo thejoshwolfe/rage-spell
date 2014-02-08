@@ -1,18 +1,31 @@
 var crage = require("./crage");
 
+var black = "#000";
+var red   = "#f00";
+var suits = [
+  {id: "c", symbol: "\u2663", color: black},
+  {id: "d", symbol: "\u2666", color: red},
+  {id: "s", symbol: "\u2660", color: black},
+  {id: "h", symbol: "\u2665", color: red},
+].map(function(suit, i) {
+  // add a sort key appropriate for a game of hearts
+  suit.index = i;
+  return suit;
+});
 module.exports.new52Cards = new52Cards;
 function new52Cards(game, location) {
   var result = [];
-  "c d s h".split(" ").forEach(function(suitName, suitIndex) {
-    "A 2 3 4 5 6 7 8 9 T J Q K".split(" ").forEach(function(rankName, rankIndex) {
+  suits.forEach(function(suit) {
+    "A 2 3 4 5 6 7 8 9 10 J Q K".split(" ").forEach(function(rankName, rankIndex) {
       var rankNumberAceHigh = rankIndex + 1;
       if (rankNumberAceHigh === 1) rankNumberAceHigh = 14;
       var profile = {
-        suitName: suitName,
-        suitNumber: suitIndex + 1,
-        rankName: rankName,
-        rankNumber: rankIndex + 1,
-        rankNumberAceHigh: rankNumberAceHigh,
+        suit: suit,
+        rank: {
+          name: rankName,
+          number: rankIndex + 1,
+          numberAceHigh: rankNumberAceHigh,
+        },
       };
       game.newCard(profile, location);
     });
@@ -22,7 +35,7 @@ function new52Cards(game, location) {
 
 module.exports.compareAceHigh = compareAceHigh;
 function compareAceHigh(a, b) {
-  var result = crage.operatorCompare(a.profile.suitNumber, b.profile.suitNumber);
+  var result = crage.operatorCompare(a.profile.suit.index, b.profile.suit.index);
   if (result !== 0) return result;
-  return crage.operatorCompare(a.profile.rankNumberAceHigh, b.profile.rankNumberAceHigh);
+  return crage.operatorCompare(a.profile.rank.numberAceHigh, b.profile.rank.numberAceHigh);
 }

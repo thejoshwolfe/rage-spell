@@ -1,8 +1,6 @@
 var crage = require("../crage");
-var frenchDeck = require("../frenchDeck");
-var game = new crage.Game(function() { return []; });
-var deck = game.newLocation();
-frenchDeck.new52Cards(game, deck);
+var hearts = require("../hearts");
+var game = hearts.newGame();
 
 var canvas = document.getElementById("canvas");
 
@@ -18,32 +16,6 @@ var cardHeight = cardWidth*3.5/2.5;
 var cornerRadius = cardWidth/20;
 var fontSize = Math.floor(cardHeight/4);
 
-var suitSymbols = {
-  s: "\u2660",
-  c: "\u2663",
-  h: "\u2665",
-  d: "\u2666",
-};
-var suitColors = {
-  s: "#000",
-  c: "#000",
-  h: "#f00",
-  d: "#f00",
-};
-(function() {
-  var x = 0;
-  var y = 0;
-  deck.getCardsInOrder().forEach(function(card) {
-    card.x = x;
-    card.y = y;
-    x += cardWidth;
-    if (x >= canvasWidth) {
-      x = 0;
-      y += cardHeight;
-    }
-  });
-})();
-
 render();
 function render() {
   var context = canvas.getContext("2d");
@@ -53,22 +25,26 @@ function render() {
   context.fillStyle = "#050";
   context.fillRect(0, 0, canvasWidth, canvasHeight);
 
-  deck.getCardsInOrder().forEach(function(card) {
-    context.fillStyle = "#fff";
-    roundedCornerRect(context, card.x, card.y, cardWidth, cardHeight, cornerRadius);
+  game.players.forEach(function(player, playerIndex) {
+    var cardY = playerIndex * cardHeight;
+    player.hand.getCardsInOrder().forEach(function(card, cardIndex) {
+      var cardX = cardIndex * cardWidth;
+      context.fillStyle = "#fff";
+      roundedCornerRect(context, cardX, cardY, cardWidth, cardHeight, cornerRadius);
 
-    var rankSymbol = card.profile.rankName;
-    if (rankSymbol === "T") rankSymbol = "10";
-    var suitSymbol = suitSymbols[card.profile.suitName];
-    var suitColor = suitColors[card.profile.suitName];
-    context.fillStyle = suitColor;
-    context.font = fontSize + "pt sans-serif";
-    var x = card.x+cornerRadius;
-    var y = card.y+cornerRadius;
-    y += fontSize;
-    context.fillText(rankSymbol, x, y);
-    y += fontSize;
-    context.fillText(suitSymbol, x, y);
+      var rankSymbol = card.profile.rank.name;
+      if (rankSymbol === "T") rankSymbol = "10";
+      var suitSymbol = card.profile.suit.symbol;
+      var suitColor = card.profile.suit.color;
+      context.fillStyle = suitColor;
+      context.font = fontSize + "pt sans-serif";
+      var x = cardX+cornerRadius;
+      var y = cardY+cornerRadius;
+      y += fontSize;
+      context.fillText(rankSymbol, x, y);
+      y += fontSize;
+      context.fillText(suitSymbol, x, y);
+    });
   });
 
   context.restore();
@@ -87,6 +63,7 @@ function roundedCornerRect(context, x, y, width, height, radius) {
 resize();
 window.addEventListener("resize", resize);
 function resize() {
+  // keep the canvas the center of attention
   if (window.innerWidth / canvasWidth < window.innerHeight / canvasHeight) {
     canvas.width = window.innerWidth;
     canvas.height = canvasHeight * canvas.width / canvasWidth;

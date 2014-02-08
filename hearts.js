@@ -35,28 +35,27 @@ function newGame() {
   var mandatoryNextTurn;
   var heartsAreBroken = false;
   function makePlayCardAction(player, card) {
-    var cardName = card.profile.rankName + card.profile.suitName;
-    return new crage.Action(game, player, {text: cardName}, function() {
+    return new crage.Action(game, player, {card: card}, function() {
       mandatoryNextTurn = null;
       card.location = player.playSlot;
       turnIndex = (turnIndex + 1) % 4;
       if (leadSuit == null) {
-        leadSuit = card.profile.suitName;
+        leadSuit = card.profile.suit.id;
       }
-      if (card.profile.suitName === "h") {
+      if (card.profile.suit.id === "h") {
         heartsAreBroken = true;
       }
       if (isTrickComplete()) {
         // make a confirmation action
-        mandatoryNextTurn = new crage.Action(game, game.players[0], {text: ""}, function() {
+        mandatoryNextTurn = new crage.Action(game, game.players[0], {}, function() {
           mandatoryNextTurn = null;
           var takerPlayer = null;
           var highestRank = -Infinity;
           game.players.forEach(function(player, playerIndex) {
             var card = getPlayedCard(player);
-            if (card.profile.suitName !== leadSuit) return;
-            if (highestRank == null || highestRank < card.profile.rankNumberAceHigh) {
-              highestRank = card.profile.rankNumberAceHigh;
+            if (card.profile.suit.id !== leadSuit) return;
+            if (highestRank == null || highestRank < card.profile.rank.numberAceHigh) {
+              highestRank = card.profile.rank.numberAceHigh;
               takerPlayer = player;
               // this guy leads the next trick
               turnIndex = playerIndex;
@@ -82,7 +81,7 @@ function newGame() {
   }
   game.players.forEach(function(player, playerIndex) {
     player.hand.getCards().forEach(function(card) {
-      if (card.profile.rankName + card.profile.suitName === "2c") {
+      if (card.profile.rank.name + card.profile.suit.id === "2c") {
         turnIndex = playerIndex;
         mandatoryNextTurn = makePlayCardAction(player, card);
       }
@@ -95,7 +94,7 @@ function newGame() {
     var player = game.players[turnIndex];
     function makeActionsForSuits(suitNames) {
       player.hand.getCardsInOrder().forEach(function(card) {
-        if (suitNames.indexOf(card.profile.suitName) !== -1) {
+        if (suitNames.indexOf(card.profile.suit.id) !== -1) {
           result.push(makePlayCardAction(player, card));
         }
       });
