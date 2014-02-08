@@ -47,7 +47,7 @@ function newGame() {
       }
       if (isTrickComplete()) {
         // make a confirmation action
-        mandatoryNextTurn = new crage.Action(game, game.players[0], {}, function() {
+        mandatoryNextTurn = new crage.Action(game, null, {}, function() {
           mandatoryNextTurn = null;
           var takerPlayer = null;
           var highestRank = -Infinity;

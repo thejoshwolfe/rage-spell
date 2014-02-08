@@ -60,18 +60,12 @@ var actions;
 var actionCards;
 refreshActions();
 function refreshActions() {
-  while (true) {
-    actions = game.getActions();
-    if (actions.length === 0) break; // game over
-    var enabledPlayer = actions[0].player;
-    // assume all actions are from the same player
-    if (enabledPlayer === game.players[0]) break; // let the human play
-    // computer players turn
-    var randomAction = actions[Math.floor(Math.random() * actions.length)];
-    randomAction.func();
-  }
-  actionCards = actions.map(function(action) { return action.data.card; });
-  game.locations.forEach(refreshLocationSettings);
+  actions = game.getActions();
+  actionCards = actions.filter(function(action) {
+    return action.player === game.players[0];
+  }).map(function(action) {
+    return action.data.card;
+  });
   render();
 }
 function refreshLocationSettings(locationGroup) {
@@ -95,6 +89,8 @@ function refreshLocationSettings(locationGroup) {
 
 render();
 function render() {
+  game.locations.forEach(refreshLocationSettings);
+
   var context = canvas.getContext("2d");
   context.save();
 
@@ -168,22 +164,30 @@ function resize() {
 }
 
 canvas.addEventListener("mousedown", function(event) {
-  var x = realToFakeX(event.layerX);
-  var y = realToFakeY(event.layerY);
-  var clickedActions = actions.filter(function(action) {
-    var card = action.data.card;
-    if (card == null) return true;
-    if (x < card.location.x) return false;
-    if (y < card.location.y) return false;
-    if (card.location.x + cardWidth < x) return false;
-    if (card.location.y + cardHeight < y) return false;
-    return true;
-  });
-  clickedActions.sort(function(actionA, actionB) {
-    return crage.operatorCompare(actionA.data.card.location.z, actionB.data.card.location.z);
-  });
-  var clickedAction = clickedActions[clickedActions.length - 1];
-  if (clickedAction == null) return;
+  if (actions[0].length === 0) return; // game over
+  var clickedAction;
+  if (actions[0].player === game.players[0]) {
+    // human clicks
+    var x = realToFakeX(event.layerX);
+    var y = realToFakeY(event.layerY);
+    var clickedActions = actions.filter(function(action) {
+      var card = action.data.card;
+      if (card == null) return true;
+      if (x < card.location.x) return false;
+      if (y < card.location.y) return false;
+      if (card.location.x + cardWidth < x) return false;
+      if (card.location.y + cardHeight < y) return false;
+      return true;
+    });
+    clickedActions.sort(function(actionA, actionB) {
+      return crage.operatorCompare(actionA.data.card.location.z, actionB.data.card.location.z);
+    });
+    clickedAction = clickedActions[clickedActions.length - 1];
+    if (clickedAction == null) return;
+  } else {
+    // push the computers along
+    clickedAction = actions[Math.floor(Math.random() * actions.length)];
+  }
   clickedAction.func();
   refreshActions();
 });
