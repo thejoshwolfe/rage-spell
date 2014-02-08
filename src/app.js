@@ -1,5 +1,5 @@
-var crage = require("../crage");
-var hearts = require("../hearts");
+var crage = require("./crage");
+var hearts = require("./hearts");
 var canvas = document.getElementById("canvas");
 
 // all coordinates are scaled to these dimensions

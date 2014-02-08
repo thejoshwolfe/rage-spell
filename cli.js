@@ -29,9 +29,14 @@ function prompt(cb) {
     cb(input.trim());
   });
 }
-function cardToString(card) {
-  var text = card.profile.rankName + card.profile.suitName;
-  var foreground = suitForegrounds[card.profile.suitName];
+function cardToPlainString(card) {
+  var rankName = card.profile.rank.name;
+  if (rankName === "10") rankName = "T";
+  return rankName + card.profile.suit.id;
+}
+function cardToTerminalString(card) {
+  var text = cardToPlainString(card);
+  var foreground = suitForegrounds[card.profile.suit.id];
   return colorize(text, foreground, black, {});
 }
 
@@ -43,27 +48,27 @@ function displayAndPromptForAction() {
 
 function display() {
   var playerStrings = game.players.map(function(player) {
-    var handString = player.hand.getCardsInOrder().map(cardToString).join(" ");
-    var keepString = player.keepPile.getCardsInOrder().map(cardToString).join(" ");
+    var handString = player.hand.getCardsInOrder().map(cardToTerminalString).join(" ");
+    var keepString = player.keepPile.getCardsInOrder().map(cardToTerminalString).join(" ");
     return player.profile.name + ": " + handString + " - " + keepString;
   });
   console.log(playerStrings.join("\n"));
 
   var playedString = game.players.map(function(player) {
     var playedCard = player.playSlot.getCards()[0];
-    return playedCard == null ? "  " : cardToString(playedCard);
+    return playedCard == null ? "  " : cardToTerminalString(playedCard);
   }).join(" ");
   console.log(playedString);
 }
 
 function promptForAction(actions) {
   var actionStrings = actions.map(function(action) {
-    return action.data.text;
+    return cardToTerminalString(action.data.card);
   });
   console.log(actions[0].player.profile.name + ": " + actionStrings.join(" "));
   prompt(function(text) {
     var chosenActions = actions.filter(function(action) {
-      return action.data.text.toLowerCase() === text.toLowerCase();
+      return cardToPlainString(action.data.card).toLowerCase() === text.toLowerCase();
     });
     if (chosenActions.length !== 1) {
       console.log("bad");
