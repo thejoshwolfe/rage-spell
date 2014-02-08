@@ -18,6 +18,7 @@ function realToFakeY(realY) { return realY / canvas.height * canvasHeight; }
 
 var game = hearts.newGame();
 (function() {
+  // where should the locations be rendered?
   var z = 0;
   game.players.forEach(function(player, playerIndex) {
     player.hand.layout = rotate({
@@ -47,17 +48,28 @@ var game = hearts.newGame();
         layout.dx = layout.dy;
         layout.dy = dx;
         var x = layout.x - canvasWidth/2;
-        layout.x = layout.y;
-        layout.y = canvasWidth/2 - x;
+        layout.x = canvasWidth/2 - (layout.y - canvasHeight/2);
+        layout.y = canvasHeight/2 + x;
       }
       return layout;
     }
   });
 })();
-var actions, actionCards;
+
+var actions;
+var actionCards;
 refreshActions();
 function refreshActions() {
-  actions = game.getActions();
+  while (true) {
+    actions = game.getActions();
+    if (actions.length === 0) break; // game over
+    var enabledPlayer = actions[0].player;
+    // assume all actions are from the same player
+    if (enabledPlayer === game.players[0]) break; // let the human play
+    // computer players turn
+    var randomAction = actions[Math.floor(Math.random() * actions.length)];
+    randomAction.func();
+  }
   actionCards = actions.map(function(action) { return action.data.card; });
   game.locations.forEach(refreshLocationSettings);
   render();

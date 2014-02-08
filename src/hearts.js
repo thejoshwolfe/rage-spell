@@ -19,7 +19,7 @@ function newGame() {
   });
 
   var deck = game.newLocation();
-  frenchDeck.new52Cards(game, {group: deck});
+  frenchDeck.new52Cards(game, deck);
 
   // deal
   deck.shuffle();
