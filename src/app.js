@@ -1,6 +1,6 @@
 var crage = require("./crage");
 var hearts = require("./hearts");
-var canvas = document.getElementById("canvas");
+var canvas = window.document.getElementById("canvas");
 
 // all coordinates are scaled to these dimensions
 var canvasWidth = 300;
@@ -18,6 +18,7 @@ function realToFakeX(realX) { return realX / canvas.width * canvasWidth; }
 function realToFakeY(realY) { return realY / canvas.height * canvasHeight; }
 
 var game = hearts.newGame();
+var controlEverything = false;
 var theHuman = game.players[0];
 (function() {
   // where should the locations be rendered?
@@ -99,14 +100,14 @@ function render() {
     return crage.operatorCompare(cardA.location.z, cardB.location.z);
   });
   var actionCards = actions.filter(function(action) {
-    return action.player === theHuman;
+    return controlEverything || action.player === theHuman;
   }).map(function(action) {
     return action.data.card;
   });
   cards.forEach(function(card) {
     var enabled = actionCards.indexOf(card) !== -1;
     var visibility = card.location.group.visibility;
-    var faceUp = visibility === true || visibility === theHuman;
+    var faceUp = controlEverything || visibility === true || visibility === theHuman;
     renderCard(context, card, enabled, faceUp);
   });
 
@@ -180,9 +181,10 @@ function resize() {
 }
 
 canvas.addEventListener("mousedown", function(event) {
+  if (event.button !== 0) return; // left click only
   if (actions[0].length === 0) return; // game over
   var clickedAction;
-  if (actions[0].player === theHuman) {
+  if (controlEverything || actions[0].player === theHuman) {
     // human clicks
     var x = realToFakeX(event.layerX);
     var y = realToFakeY(event.layerY);
@@ -206,4 +208,15 @@ canvas.addEventListener("mousedown", function(event) {
   }
   clickedAction.func();
   refreshActions();
+});
+
+window.document.addEventListener("keydown", function(event) {
+  if (event.ctrlKey) return;
+  var char = String.fromCharCode(event.keyCode);
+  switch (char) {
+    case "P":
+      controlEverything = !controlEverything;
+      render();
+      break;
+  }
 });
