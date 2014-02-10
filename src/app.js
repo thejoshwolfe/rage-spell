@@ -19,6 +19,7 @@ function realToFakeX(realX) { return realX / canvas.width * canvasWidth; }
 function realToFakeY(realY) { return realY / canvas.height * canvasHeight; }
 
 var game = hearts.newGame();
+var cardsInZOrder;
 var controlEverything = false;
 var theHuman = game.players[0];
 var playerRotations = [
@@ -90,6 +91,10 @@ function refreshLocationSettings(locationGroup) {
 render();
 function render() {
   game.locations.forEach(refreshLocationSettings);
+  cardsInZOrder = game.cards.slice(0);
+  cardsInZOrder.sort(function(cardA, cardB) {
+    return crage.operatorCompare(cardA.location.z, cardB.location.z);
+  });
 
   var context = canvas.getContext("2d");
   context.save();
@@ -98,16 +103,12 @@ function render() {
   context.fillStyle = "#050";
   context.fillRect(0, 0, canvasWidth, canvasHeight);
 
-  var cards = game.cards.slice(0);
-  cards.sort(function(cardA, cardB) {
-    return crage.operatorCompare(cardA.location.z, cardB.location.z);
-  });
   var actionCards = actions.filter(function(action) {
     return controlEverything || action.player === theHuman;
   }).map(function(action) {
     return action.data.card;
   });
-  cards.forEach(function(card) {
+  cardsInZOrder.forEach(function(card) {
     var enabled = actionCards.indexOf(card) !== -1;
     var visibility = card.location.group.visibility;
     var faceUp = controlEverything || visibility === true || visibility === theHuman;
@@ -185,26 +186,28 @@ function resize() {
 
 canvas.addEventListener("mousedown", function(event) {
   if (event.button !== 0) return; // left click only
-  if (actions[0].length === 0) return; // game over
+  if (actions.length === 0) return; // game over
   var clickedAction;
   if (controlEverything || actions[0].player === theHuman) {
     // human clicks
     var x = realToFakeX(event.layerX);
     var y = realToFakeY(event.layerY);
+    var clickedCard = null;
+    for (var i = cardsInZOrder.length - 1; i >= 0; i--) {
+      var card = cardsInZOrder[i];
+      if (x < card.location.position.x - cardWidth/2)  continue;
+      if (y < card.location.position.y - cardHeight/2) continue;
+      if (x > card.location.position.x + cardWidth/2)  continue;
+      if (y > card.location.position.y + cardHeight/2) continue;
+      clickedCard = card;
+      break;
+    };
     var clickedActions = actions.filter(function(action) {
-      var card = action.data.card;
-      if (card == null) return true;
-      if (x < card.location.position.x - cardWidth/2) return false;
-      if (y < card.location.position.y - cardHeight/2) return false;
-      if (x > card.location.position.x + cardWidth/2) return false;
-      if (y > card.location.position.y + cardHeight/2) return false;
-      return true;
+      return action.data.card == null || action.data.card === clickedCard;
     });
-    clickedActions.sort(function(actionA, actionB) {
-      return crage.operatorCompare(actionA.data.card.location.z, actionB.data.card.location.z);
-    });
-    clickedAction = clickedActions[clickedActions.length - 1];
-    if (clickedAction == null) return;
+    if (clickedActions.length === 0) return;
+    // assume 1 action per card
+    clickedAction = clickedActions[0];
   } else {
     // push the computers along
     clickedAction = actions[Math.floor(Math.random() * actions.length)];
