@@ -1,5 +1,6 @@
 var crage = require("./crage");
 var hearts = require("./hearts");
+var Vector = require("./vector");
 var canvas = window.document.getElementById("canvas");
 
 // all coordinates are scaled to these dimensions
@@ -20,40 +21,42 @@ function realToFakeY(realY) { return realY / canvas.height * canvasHeight; }
 var game = hearts.newGame();
 var controlEverything = false;
 var theHuman = game.players[0];
+var playerRotations = [
+  0,          // human
+  Math.PI/2,  // left
+  Math.PI,    // across
+  -Math.PI/2, // right
+];
 (function() {
   // where should the locations be rendered?
   var z = 0;
+  var canvasCenter = {x: canvasWidth/2, y: canvasHeight/2};
   game.players.forEach(function(player, playerIndex) {
-    player.hand.layout = rotate({
-      dx: cardWidth*2/3,
-      x: canvasWidth/2,
-      dy: 0,
-      y: canvasHeight*(1/2 + 5/16),
+    // tilt cards based on where the player is sitting.
+    var playerTheta = playerRotations[playerIndex];
+
+    player.hand.layout = rotateLayout({
+      center: {x: canvasWidth/2, y: canvasHeight*(1/2 + 5/16)},
+      spacing: {x: cardWidth*2/3, y: 0},
+      cardRotation: playerTheta,
       z: z++,
     });
-    player.playSlot.layout = rotate({
-      dx: 0,
-      x: canvasWidth/2,
-      dy: 0,
-      y: canvasHeight*(1/2 + 1/8),
+    player.playSlot.layout = rotateLayout({
+      center: {x: canvasWidth/2, y: canvasHeight*(1/2 + 1/16)},
+      spacing: {x: 0, y: 0},
+      cardRotation: 0, // keep the play pile oriented for the human to read
       z: z++,
     });
-    player.keepPile.layout = rotate({
-      dx: cardWidth/3,
-      x: canvasWidth/2,
-      dy: 0,
-      y: canvasHeight*(1/2 + 7/16),
+    player.keepPile.layout = rotateLayout({
+      center: {x: canvasWidth/2, y: canvasHeight*(1/2 + 7/16)},
+      spacing: {x: cardWidth/3, y: 0},
+      cardRotation: playerTheta,
       z: z++,
     });
-    function rotate(layout) {
-      for (var i = 0; i < playerIndex; i++) {
-        var dx = layout.dx;
-        layout.dx = layout.dy;
-        layout.dy = dx;
-        var x = layout.x - canvasWidth/2;
-        layout.x = canvasWidth/2 - (layout.y - canvasHeight/2);
-        layout.y = canvasHeight/2 + x;
-      }
+    function rotateLayout(layout) {
+      // rotate the center of all this player's locations around on the table.
+      layout.center = Vector.rotate(layout.center, canvasCenter, playerTheta);
+      layout.spacing = Vector.rotate(layout.spacing, {x:0, y:0}, playerTheta);
       return layout;
     }
   });
@@ -68,18 +71,18 @@ function refreshActions() {
 function refreshLocationSettings(locationGroup) {
   if (locationGroup.layout == null) return;
   var cards = locationGroup.getCardsInOrder();
-  var dx = locationGroup.layout.dx;
-  var  x = locationGroup.layout.x - dx * cards.length / 2;
-  var dy = locationGroup.layout.dy;
-  var  y = locationGroup.layout.y - dy * cards.length / 2;
+  var position = locationGroup.layout.center;
+  var spacing = locationGroup.layout.spacing;
+  var cardRotation = locationGroup.layout.cardRotation;
+  // the cards should all be centered
+  position = Vector.subtract(position, Vector.scale(spacing, (cards.length-1)/2));
+  var z = locationGroup.layout.z;
   var dz = 1/cards.length;
-  var  z = locationGroup.layout.z;
   cards.forEach(function(card) {
-    card.location.x = x - cardWidth/2;
-    card.location.y = y - cardHeight/2;
+    card.location.position = position;
     card.location.z = z;
-    x += dx;
-    y += dy;
+    card.location.rotation = cardRotation;
+    position = Vector.add(position, spacing);
     z += dz;
   });
 }
@@ -114,12 +117,12 @@ function render() {
   context.restore();
 }
 function renderCard(context, card, enabled, faceUp) {
-  if (card.location.x == null) return;
-
   context.save();
 
+  context.translate(card.location.position.x, card.location.position.y);
+  context.rotate(card.location.rotation);
   roundedCornerRectPath(context,
-      card.location.x, card.location.y,
+      -cardWidth/2, -cardHeight/2,
       cardWidth, cardHeight,
       cornerRadius);
   context.fillStyle = "#fff";
@@ -128,8 +131,8 @@ function renderCard(context, card, enabled, faceUp) {
   if (faceUp) {
     context.fillStyle = card.profile.suit.color;
     context.font = fontSize + "pt sans-serif";
-    var x = card.location.x+cornerRadius;
-    var y = card.location.y+cornerRadius;
+    var x = -cardWidth/2 + cornerRadius;
+    var y = -cardHeight/2 + cornerRadius;
     y += fontSize;
     context.fillText(card.profile.rank.name, x, y);
     y += fontSize;
@@ -143,7 +146,7 @@ function renderCard(context, card, enabled, faceUp) {
   } else {
     // render the back of a card
     roundedCornerRectPath(context,
-        card.location.x + borderWidth, card.location.y + borderWidth,
+        -cardWidth/2 + borderWidth, -cardHeight/2 + borderWidth,
         cardWidth - borderWidth*2, cardHeight - borderWidth*2,
         cornerRadius);
     context.fillStyle = "#aaf";
@@ -191,10 +194,10 @@ canvas.addEventListener("mousedown", function(event) {
     var clickedActions = actions.filter(function(action) {
       var card = action.data.card;
       if (card == null) return true;
-      if (x < card.location.x) return false;
-      if (y < card.location.y) return false;
-      if (card.location.x + cardWidth < x) return false;
-      if (card.location.y + cardHeight < y) return false;
+      if (x < card.location.position.x - cardWidth/2) return false;
+      if (y < card.location.position.y - cardHeight/2) return false;
+      if (x > card.location.position.x + cardWidth/2) return false;
+      if (y > card.location.position.y + cardHeight/2) return false;
       return true;
     });
     clickedActions.sort(function(actionA, actionB) {
