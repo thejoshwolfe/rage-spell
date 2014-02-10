@@ -15,8 +15,12 @@ var cardHeight = cardWidth*3.5/2.5;
 var cornerRadius = cardWidth/20;
 var borderWidth = cornerRadius;
 var fontSize = Math.floor(cardHeight/4);
-function realToFakeX(realX) { return realX / canvas.width * canvasWidth; }
-function realToFakeY(realY) { return realY / canvas.height * canvasHeight; }
+function mousePointToScaledPoint(point) {
+  return {
+    x: point.x / canvas.width * canvasWidth,
+    y: point.y / canvas.height * canvasHeight,
+  };
+}
 
 var game = hearts.newGame();
 var cardsInZOrder;
@@ -184,23 +188,30 @@ function resize() {
   render();
 }
 
+function isPointInCard(point, card) {
+  // rotate this point into our world, then compare the axis-aligned bounding box.
+  point = Vector.rotate(point, card.location.position, -card.location.rotation);
+  if (point.x < card.location.position.x - cardWidth/2)  return false;
+  if (point.y < card.location.position.y - cardHeight/2) return false;
+  if (point.x > card.location.position.x + cardWidth/2)  return false;
+  if (point.y > card.location.position.y + cardHeight/2) return false;
+  return true;
+}
 canvas.addEventListener("mousedown", function(event) {
   if (event.button !== 0) return; // left click only
+  event.preventDefault();
   if (actions.length === 0) return; // game over
   var clickedAction;
   if (controlEverything || actions[0].player === theHuman) {
     // human clicks
-    var x = realToFakeX(event.layerX);
-    var y = realToFakeY(event.layerY);
+    var point = mousePointToScaledPoint({x: event.layerX, y: event.layerY});
     var clickedCard = null;
     for (var i = cardsInZOrder.length - 1; i >= 0; i--) {
       var card = cardsInZOrder[i];
-      if (x < card.location.position.x - cardWidth/2)  continue;
-      if (y < card.location.position.y - cardHeight/2) continue;
-      if (x > card.location.position.x + cardWidth/2)  continue;
-      if (y > card.location.position.y + cardHeight/2) continue;
-      clickedCard = card;
-      break;
+      if (isPointInCard(point, card)) {
+        clickedCard = card;
+        break;
+      }
     };
     var clickedActions = actions.filter(function(action) {
       return action.data.card == null || action.data.card === clickedCard;
