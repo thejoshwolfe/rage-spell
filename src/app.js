@@ -216,10 +216,13 @@ canvas.addEventListener("mousedown", function(event) {
 window.document.addEventListener("keydown", function(event) {
   if (event.ctrlKey) return;
   var char = String.fromCharCode(event.keyCode);
-  switch (char) {
-    case "P":
+  var func = {
+    "P": function() {
       controlEverything = !controlEverything;
       render();
-      break;
-  }
+    },
+  }[char];
+  if (func == null) return;
+  func();
+  event.preventDefault();
 });
