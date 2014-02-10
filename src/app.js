@@ -68,12 +68,11 @@ var playerRotations = [
 })();
 
 var actions;
-refreshActions();
 function refreshActions() {
   actions = game.getActions();
-  render();
+  refreshDisplay();
 }
-function refreshLocationSettings(locationGroup) {
+function computeLocationGroupLocations(locationGroup) {
   if (locationGroup.layout == null) return;
   var cards = locationGroup.getCardsInOrder();
   var position = locationGroup.layout.center;
@@ -91,15 +90,19 @@ function refreshLocationSettings(locationGroup) {
     z += dz;
   });
 }
-
-render();
-function render() {
-  game.locations.forEach(refreshLocationSettings);
+function computeLocations() {
+  game.locations.forEach(computeLocationGroupLocations);
   cardsInZOrder = game.cards.slice(0);
   cardsInZOrder.sort(function(cardA, cardB) {
     return crage.operatorCompare(cardA.location.z, cardB.location.z);
   });
+}
 
+function refreshDisplay() {
+  computeLocations();
+  render();
+}
+function render() {
   var context = canvas.getContext("2d");
   context.save();
 
@@ -121,11 +124,28 @@ function render() {
 
   context.restore();
 }
+
+var animationInterval = 500;
+window.setInterval(render, animationInterval);
+var animationReferenceTime = new Date().getTime();
+var colorAnimation = ["#dd0", "#44f"];
+
 function renderCard(context, card, enabled, faceUp) {
   context.save();
 
   context.translate(card.location.position.x, card.location.position.y);
   context.rotate(card.location.rotation);
+
+  if (faceUp && enabled) {
+    roundedCornerRectPath(context,
+        -cardWidth/2 - 2 * cornerRadius, -cardHeight/2 - 2 * cornerRadius,
+        cardWidth    + 4 * cornerRadius, cardHeight    + 4 * cornerRadius,
+        cornerRadius);
+    var time = new Date().getTime() - animationReferenceTime;
+    var animationIndex = Math.floor(time / animationInterval) % colorAnimation.length;
+    context.fillStyle = colorAnimation[animationIndex];
+    context.fill();
+  }
   roundedCornerRectPath(context,
       -cardWidth/2, -cardHeight/2,
       cardWidth, cardHeight,
@@ -142,12 +162,6 @@ function renderCard(context, card, enabled, faceUp) {
     context.fillText(card.profile.rank.name, x, y);
     y += fontSize;
     context.fillText(card.profile.suit.symbol, x, y);
-
-    if (!enabled) {
-      context.globalAlpha = 0.3;
-      context.fillStyle = "#000";
-      context.fill();
-    }
   } else {
     // render the back of a card
     roundedCornerRectPath(context,
@@ -170,8 +184,11 @@ function roundedCornerRectPath(context, x, y, width, height, radius) {
   context. arcTo(x             , y              , x      +radius, y              , radius);
 }
 
+window.addEventListener("resize", function() {
+  resize();
+  refreshDisplay();
+});
 resize();
-window.addEventListener("resize", resize);
 function resize() {
   // keep the canvas the center of attention
   if (window.innerWidth / canvasWidth < window.innerHeight / canvasHeight) {
@@ -185,7 +202,6 @@ function resize() {
     canvas.style.left = ((window.innerWidth - canvas.width) / 2) + "px";
     canvas.style.top = "0px";
   }
-  render();
 }
 
 function isPointInCard(point, card) {
@@ -233,10 +249,12 @@ window.document.addEventListener("keydown", function(event) {
   var func = {
     "P": function() {
       controlEverything = !controlEverything;
-      render();
+      refreshDisplay();
     },
   }[char];
   if (func == null) return;
   func();
   event.preventDefault();
 });
+
+refreshActions();
