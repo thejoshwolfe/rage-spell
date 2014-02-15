@@ -1,5 +1,9 @@
 var crage = require("./crage");
-var hearts = require("./hearts");
+var gameModule = require("./rageSpell");
+if (window.location.hash === "#hearts") {
+  // literal strings in require calls are required for browser preparation.
+  gameModule = require("./hearts");
+}
 var Vector = require("./vector");
 var canvas = window.document.getElementById("canvas");
 
@@ -22,51 +26,11 @@ function mousePointToScaledPoint(point) {
   };
 }
 
-var game = hearts.newGame();
+var game = gameModule.newGame(metrics);
 var cardsInZOrder;
 var controlEverything = false;
 var zoomInCard = null;
 var theHuman = game.players[0];
-var playerRotations = [
-  0,          // human
-  Math.PI/2,  // left
-  Math.PI,    // across
-  -Math.PI/2, // right
-];
-(function() {
-  // where should the locations be rendered?
-  var z = 0;
-  var canvasCenter = {x: metrics.canvasWidth/2, y: metrics.canvasHeight/2};
-  game.players.forEach(function(player, playerIndex) {
-    // tilt cards based on where the player is sitting.
-    var playerTheta = playerRotations[playerIndex];
-
-    player.hand.layout = rotateLayout({
-      center: {x: metrics.canvasWidth/2, y: metrics.canvasHeight*(1/2 + 5/16)},
-      spacing: {x: metrics.cardWidth*2/3, y: 0},
-      cardRotation: playerTheta,
-      z: z++,
-    });
-    player.playSlot.layout = rotateLayout({
-      center: {x: metrics.canvasWidth/2, y: metrics.canvasHeight*(1/2 + 1/16)},
-      spacing: {x: 0, y: 0},
-      cardRotation: 0, // keep the play pile oriented for the human to read
-      z: z++,
-    });
-    player.keepPile.layout = rotateLayout({
-      center: {x: metrics.canvasWidth/2, y: metrics.canvasHeight*(1/2 + 7/16)},
-      spacing: {x: metrics.cardWidth/3, y: 0},
-      cardRotation: playerTheta,
-      z: z++,
-    });
-    function rotateLayout(layout) {
-      // rotate the center of all this player's locations around on the table.
-      layout.center = Vector.rotate(layout.center, canvasCenter, playerTheta);
-      layout.spacing = Vector.rotate(layout.spacing, {x:0, y:0}, playerTheta);
-      return layout;
-    }
-  });
-})();
 
 var actions;
 function refreshActions() {
@@ -109,7 +73,7 @@ function render() {
   context.save();
 
   context.scale(canvas.width/metrics.canvasWidth, canvas.height/metrics.canvasHeight);
-  game.renderBackground(context, metrics);
+  game.renderBackground(context);
 
   var actionCards = actions.filter(function(action) {
     return controlEverything || action.player === theHuman;
@@ -175,7 +139,7 @@ function renderCard(context, card, enabled, faceUp) {
   context.fill();
 
   if (faceUp) {
-    game.renderCardFace(context, metrics, card);
+    game.renderCardFace(context, card);
   } else {
     // render the back of a card
     roundedCornerRectPath(context,

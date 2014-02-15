@@ -1,8 +1,9 @@
 var crage = require("./crage");
 var frenchDeck = require("./frenchDeck");
+var Vector = require("./vector");
 
 module.exports.newGame = newGame;
-function newGame() {
+function newGame(metrics) {
   var playerProfiles = [
     {name: "Player 1"},
     {name: "Player 2"},
@@ -11,14 +12,50 @@ function newGame() {
   ];
 
   var game = new crage.Game(getActions);
-  playerProfiles.forEach(function(profile) {
-    var player = game.newPlayer(profile);
-    player.hand = game.newLocation(player);
-    player.playSlot = game.newLocation(true);
-    player.keepPile = game.newLocation(true);
-  });
+  (function() {
+    var z = 0;
+    var canvasCenter = {x: metrics.canvasWidth/2, y: metrics.canvasHeight/2};
+    playerProfiles.forEach(function(profile, playerIndex) {
+      var player = game.newPlayer(profile);
+      // tilt cards based on where the player is sitting.
+      var playerTheta = Math.PI*playerIndex/2;
+      player.hand = game.newLocation({
+        visibility: player,
+        layout: rotateLayout({
+          center: {x: metrics.canvasWidth/2, y: metrics.canvasHeight*(1/2 + 5/16)},
+          spacing: {x: metrics.cardWidth*2/3, y: 0},
+          cardRotation: playerTheta,
+          z: z++,
+        }),
+      });
+      player.playSlot = game.newLocation({
+        visibility: true,
+        layout: rotateLayout({
+          center: {x: metrics.canvasWidth/2, y: metrics.canvasHeight*(1/2 + 1/16)},
+          spacing: {x: 0, y: 0},
+          cardRotation: 0, // keep the play pile oriented for the human to read
+          z: z++,
+        }),
+      });
+      player.keepPile = game.newLocation({
+        visibility: true,
+        layout: rotateLayout({
+          center: {x: metrics.canvasWidth/2, y: metrics.canvasHeight*(1/2 + 7/16)},
+          spacing: {x: metrics.cardWidth/3, y: 0},
+          cardRotation: playerTheta,
+          z: z++,
+        }),
+      });
+      function rotateLayout(layout) {
+        // rotate the center of all this player's locations around on the table.
+        layout.center = Vector.rotate(layout.center, canvasCenter, playerTheta);
+        layout.spacing = Vector.rotate(layout.spacing, {x:0, y:0}, playerTheta);
+        return layout;
+      }
+    });
+  })();
 
-  var deck = game.newLocation();
+  var deck = game.newLocation({});
   frenchDeck.new52Cards(game, deck);
 
   // deal
@@ -117,11 +154,11 @@ function newGame() {
     return result;
   }
 
-  game.renderBackground = function(context, metrics) {
+  game.renderBackground = function(context) {
     context.fillStyle = "#050";
     context.fillRect(0, 0, metrics.canvasWidth, metrics.canvasHeight);
   };
-  game.renderCardFace = function(context, metrics, card) {
+  game.renderCardFace = function(context, card) {
     var fontSize = Math.floor(metrics.cardHeight/4);
     context.fillStyle = card.profile.suit.color;
     context.font = fontSize + "pt sans-serif";

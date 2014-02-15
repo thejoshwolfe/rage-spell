@@ -11,8 +11,8 @@ Game.prototype.newPlayer = function(profile) {
   this.players.push(player);
   return player;
 };
-Game.prototype.newLocation = function(visibility) {
-  var location = new Location(this, visibility);
+Game.prototype.newLocation = function(options) {
+  var location = new Location(this, options);
   this.locations.push(location);
   return location;
 };
@@ -36,9 +36,10 @@ function Card(game, profile, location) {
 }
 
 module.exports.Location = Location;
-function Location(game, visibility) {
+function Location(game, options) {
   this.game = game;
-  this.visibility = visibility;
+  this.visibility = options.visibility;
+  this.layout = options.layout;
 }
 Location.prototype.getCards = function() {
   var self = this;
