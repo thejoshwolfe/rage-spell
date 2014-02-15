@@ -103,13 +103,26 @@ function refreshDisplay() {
   computeLocations();
   render();
 }
+function renderBackground(context) {
+  context.fillStyle = "#050";
+  context.fillRect(0, 0, canvasWidth, canvasHeight);
+}
+function renderCardFace(context, card) {
+  context.fillStyle = card.profile.suit.color;
+  context.font = fontSize + "pt sans-serif";
+  var x = -cardWidth/2 + cornerRadius;
+  var y = -cardHeight/2 + cornerRadius;
+  y += fontSize;
+  context.fillText(card.profile.rank.name, x, y);
+  y += fontSize;
+  context.fillText(card.profile.suit.symbol, x, y);
+}
 function render() {
   var context = canvas.getContext("2d");
   context.save();
 
   context.scale(canvas.width/canvasWidth, canvas.height/canvasHeight);
-  context.fillStyle = "#050";
-  context.fillRect(0, 0, canvasWidth, canvasHeight);
+  renderBackground(context);
 
   var actionCards = actions.filter(function(action) {
     return controlEverything || action.player === theHuman;
@@ -175,14 +188,7 @@ function renderCard(context, card, enabled, faceUp) {
   context.fill();
 
   if (faceUp) {
-    context.fillStyle = card.profile.suit.color;
-    context.font = fontSize + "pt sans-serif";
-    var x = -cardWidth/2 + cornerRadius;
-    var y = -cardHeight/2 + cornerRadius;
-    y += fontSize;
-    context.fillText(card.profile.rank.name, x, y);
-    y += fontSize;
-    context.fillText(card.profile.suit.symbol, x, y);
+    renderCardFace(context, card);
   } else {
     // render the back of a card
     roundedCornerRectPath(context,
@@ -237,6 +243,7 @@ canvas.addEventListener("mousedown", function(event) {
   event.preventDefault();
   if (zoomInCard != null) {
     zoomInCard = null;
+    render();
     return;
   }
   if (event.button === 0) {
