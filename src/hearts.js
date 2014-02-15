@@ -117,6 +117,22 @@ function newGame() {
     return result;
   }
 
+  game.renderBackground = function(context, metrics) {
+    context.fillStyle = "#050";
+    context.fillRect(0, 0, metrics.canvasWidth, metrics.canvasHeight);
+  };
+  game.renderCardFace = function(context, metrics, card) {
+    var fontSize = Math.floor(metrics.cardHeight/4);
+    context.fillStyle = card.profile.suit.color;
+    context.font = fontSize + "pt sans-serif";
+    var x = -metrics.cardWidth/2 + metrics.cornerRadius;
+    var y = -metrics.cardHeight/2 + metrics.cornerRadius;
+    y += fontSize;
+    context.fillText(card.profile.rank.name, x, y);
+    y += fontSize;
+    context.fillText(card.profile.suit.symbol, x, y);
+  };
+
   return game;
 }
 
