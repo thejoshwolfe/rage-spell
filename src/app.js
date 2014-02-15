@@ -25,6 +25,7 @@ function mousePointToScaledPoint(point) {
 var game = hearts.newGame();
 var cardsInZOrder;
 var controlEverything = false;
+var zoomInCard = null;
 var theHuman = game.players[0];
 var playerRotations = [
   0,          // human
@@ -117,12 +118,35 @@ function render() {
   });
   cardsInZOrder.forEach(function(card) {
     var enabled = actionCards.indexOf(card) !== -1;
-    var visibility = card.location.group.visibility;
-    var faceUp = controlEverything || visibility === true || visibility === theHuman;
+    var faceUp = isFaceUp(card);
+    context.save();
+    context.translate(card.location.position.x, card.location.position.y);
+    context.rotate(card.location.rotation);
     renderCard(context, card, enabled, faceUp);
+    context.restore();
   });
-
   context.restore();
+
+  if (zoomInCard != null) {
+    // draw cover shade
+    context.save();
+    context.globalAlpha = 0.7;
+    context.fillStyle = "#000";
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    context.restore();
+    // render a super huge card
+    context.save();
+    var zoomFactor = cardHeight;
+    context.scale(canvas.width/zoomFactor, canvas.height/zoomFactor);
+    context.translate(zoomFactor/2, zoomFactor/2);
+    renderCard(context, zoomInCard, false, true);
+    context.restore();
+  }
+}
+function isFaceUp(card) {
+  if (controlEverything) return true;
+  var visibility = card.location.group.visibility;
+  return visibility === true || visibility === theHuman;
 }
 
 var animationInterval = 500;
@@ -132,9 +156,6 @@ var colorAnimation = ["#dd0", "#44f"];
 
 function renderCard(context, card, enabled, faceUp) {
   context.save();
-
-  context.translate(card.location.position.x, card.location.position.y);
-  context.rotate(card.location.rotation);
 
   if (faceUp && enabled) {
     roundedCornerRectPath(context,
@@ -171,7 +192,6 @@ function renderCard(context, card, enabled, faceUp) {
     context.fillStyle = "#aaf";
     context.fill();
   }
-
 
   context.restore();
 }
@@ -214,33 +234,54 @@ function isPointInCard(point, card) {
   return true;
 }
 canvas.addEventListener("mousedown", function(event) {
-  if (event.button !== 0) return; // left click only
   event.preventDefault();
-  if (actions.length === 0) return; // game over
-  var clickedAction;
-  if (controlEverything || actions[0].player === theHuman) {
-    // human clicks
+  if (zoomInCard != null) {
+    zoomInCard = null;
+    return;
+  }
+  if (event.button === 0) {
+    // left click
+    if (actions.length === 0) return; // game over
+    var clickedAction;
+    if (controlEverything || actions[0].player === theHuman) {
+      // human clicks
+      var clickedCard = getClickedCard();
+      var clickedActions = actions.filter(function(action) {
+        return action.data.card == null || action.data.card === clickedCard;
+      });
+      if (clickedActions.length === 0) return;
+      // assume 1 action per card
+      clickedAction = clickedActions[0];
+    } else {
+      // push the computers along
+      clickedAction = actions[Math.floor(Math.random() * actions.length)];
+    }
+    clickedAction.func();
+    refreshActions();
+  } else if (event.button === 2) {
+    var clickedCard = getClickedCard();
+    if (clickedCard == null) return;
+    if (isFaceUp(clickedCard)) {
+      // show the user a closeup
+      zoomInCard = clickedCard;
+      render();
+    }
+  }
+
+  function getClickedCard() {
     var point = mousePointToScaledPoint({x: event.layerX, y: event.layerY});
-    var clickedCard = null;
     for (var i = cardsInZOrder.length - 1; i >= 0; i--) {
       var card = cardsInZOrder[i];
       if (isPointInCard(point, card)) {
-        clickedCard = card;
-        break;
+        return card;
       }
     };
-    var clickedActions = actions.filter(function(action) {
-      return action.data.card == null || action.data.card === clickedCard;
-    });
-    if (clickedActions.length === 0) return;
-    // assume 1 action per card
-    clickedAction = clickedActions[0];
-  } else {
-    // push the computers along
-    clickedAction = actions[Math.floor(Math.random() * actions.length)];
+    return null;
   }
-  clickedAction.func();
-  refreshActions();
+});
+
+canvas.addEventListener("contextmenu", function(event) {
+  event.preventDefault();
 });
 
 window.document.addEventListener("keydown", function(event) {
