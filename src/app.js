@@ -38,6 +38,9 @@ function computeLocationGroupLocations(locationGroup) {
   var dz = 1/cards.length;
   cards.forEach(function(card) {
     card.location.position = position;
+    if (card.location.positionOffset != null) {
+      card.location.position = Vector.add(card.location.position, card.location.positionOffset);
+    }
     card.location.z = z;
     card.location.rotation = cardRotation;
     position = Vector.add(position, spacing);

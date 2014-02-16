@@ -125,6 +125,10 @@ function newGame() {
     var player = game.players[turnIndex];
     player.hand.getCards().forEach(function(card) {
       result.push(new crage.Action(game, player, {card: card}, function() {
+        card.location.positionOffset = Vector.rotate(
+            {x:0, y: -card.metrics.height/3},
+            {x:0,y:0},
+            card.location.rotation);
         nextActions = bases.map(function(base) {
           return new crage.Action(game, player, {card: base}, function() {
             nextActions = null;
