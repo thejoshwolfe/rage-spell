@@ -24,16 +24,23 @@ function newGame() {
   };
 
   var canvasCenter = {x: game.canvasWidth/2, y: game.canvasHeight/2};
+  function rotateLayout(layout, rotation) {
+    // rotate the center of all this player's locations around on the table.
+    layout.center = Vector.rotate(layout.center, canvasCenter, rotation);
+    layout.spacing = Vector.rotate(layout.spacing, {x:0, y:0}, rotation);
+    return layout;
+  }
   [{}, {}].forEach(function(profile, playerIndex) {
+    profile.id = game.players.length;
+    profile.rotation = Math.PI*playerIndex;
     var player = game.newPlayer(profile);
-    var playerTheta = Math.PI*playerIndex;
     player.hand = game.newLocation({
       visibility: player,
       layout: rotateLayout({
         center: {x: game.canvasWidth/2, y: game.canvasHeight*(1/2 + 5/16)},
         spacing: {x: cardWidth, y: 0},
-        cardRotation: playerTheta,
-      }),
+        cardRotation: profile.rotation,
+      }, profile.rotation),
     });
     var deckSpacing = cardWidth/30;
     player.deck = game.newLocation({
@@ -41,33 +48,29 @@ function newGame() {
       layout: rotateLayout({
         center: {x: game.canvasWidth/4, y: game.canvasHeight*(1/2 + 5/16)},
         spacing: {x: deckSpacing, y: deckSpacing},
-        cardRotation: playerTheta,
-      }),
+        cardRotation: profile.rotation,
+      }, profile.rotation),
     });
     player.discardPile = game.newLocation({
       visibility: true,
       layout: rotateLayout({
         center: {x: game.canvasWidth/2, y: game.canvasHeight*(1/2 + 7/16)},
         spacing: {x: cardWidth/5, y: 0},
-        cardRotation: playerTheta,
-      }),
+        cardRotation: profile.rotation,
+      }, profile.rotation),
     });
-    function rotateLayout(layout) {
-      // rotate the center of all this player's locations around on the table.
-      layout.center = Vector.rotate(layout.center, canvasCenter, playerTheta);
-      layout.spacing = Vector.rotate(layout.spacing, {x:0, y:0}, playerTheta);
-      return layout;
-    }
   });
 
   // bases
+  var bases = [];
   (function() {
     var baseMetrics = {
       width: cardWidth*2, height: cardHeight,
       cornerRadius: cornerRadius, borderWidth: borderWidth,
     };
     var baseLocation = game.newLocation({
-      visibility: true, layout: {
+      visibility: true,
+      layout: {
         center: canvasCenter,
         spacing: {x:0, y:0},
         cardRotation: 0,
@@ -77,7 +80,19 @@ function newGame() {
       name: rageData.bases[0].name,
       type: "Base",
     };
-    game.newCard(baseProfile, baseMetrics, {group: baseLocation});
+    var base = game.newCard(baseProfile, baseMetrics, {group: baseLocation});
+    base.playSlots = [];
+    game.players.forEach(function(player) {
+      base.playSlots.push(game.newLocation({
+        visibility: true,
+        layout: rotateLayout({
+          center: Vector.add(baseLocation.layout.center, {x: 0, y: (baseMetrics.height+cardMetrics.height)/2}),
+          spacing: {x: cardMetrics.width, y:0},
+          cardRotation: player.profile.rotation,
+        }, player.profile.rotation),
+      }));
+    });
+    bases.push(base);
   })();
 
   // create cards
@@ -101,8 +116,25 @@ function newGame() {
   });
 
   var turnIndex = 0;
+  var nextActions = null;
   function getActions() {
-    return [];
+    var result = [];
+    if (nextActions != null) {
+      return nextActions;
+    }
+    var player = game.players[turnIndex];
+    player.hand.getCards().forEach(function(card) {
+      result.push(new crage.Action(game, player, {card: card}, function() {
+        nextActions = bases.map(function(base) {
+          return new crage.Action(game, player, {card: base}, function() {
+            nextActions = null;
+            base.playSlots[turnIndex].append(card);
+            turnIndex = (turnIndex + 1) % game.players.length;
+          });
+        });
+      }));
+    });
+    return result;
   }
 
   game.renderBackground = function(context) {
