@@ -205,7 +205,10 @@ canvas.addEventListener("mousedown", function(event) {
       clickedAction = clickedActions[0];
     } else {
       // push the computers along
-      clickedAction = actions[Math.floor(Math.random() * actions.length)];
+      var randomActions = actions.filter(function(action) {
+        return !action.data.excludeFromRandom;
+      });
+      clickedAction = randomActions[Math.floor(Math.random() * randomActions.length)];
     }
     clickedAction.func();
     refreshActions();

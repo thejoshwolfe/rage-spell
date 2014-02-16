@@ -129,13 +129,19 @@ function newGame() {
             {x:0, y: -card.metrics.height/3},
             {x:0,y:0},
             card.location.rotation);
-        nextActions = bases.map(function(base) {
-          return new crage.Action(game, player, {card: base}, function() {
+        nextActions = [];
+        bases.forEach(function(base) {
+          nextActions.push(new crage.Action(game, player, {card: base}, function() {
             nextActions = null;
             base.playSlots[turnIndex].append(card);
             turnIndex = (turnIndex + 1) % game.players.length;
-          });
+          }));
         });
+        // undo
+        nextActions.push(new crage.Action(game, player, {card: card, excludeFromRandom: true}, function() {
+          nextActions = null;
+          card.location.positionOffset = null;
+        }));
       }));
     });
     return result;
