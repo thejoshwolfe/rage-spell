@@ -1,13 +1,12 @@
 var crage = require("./crage");
 var Vector = require("./vector");
-var factions = require("./factions");
+var rageData = require("./rageData");
 
 var handSize = 5;
 
 module.exports.newGame = newGame;
 function newGame(metrics) {
   var game = new crage.Game(getActions);
-  var z = 0;
   var canvasCenter = {x: metrics.canvasWidth/2, y: metrics.canvasHeight/2};
   [{}, {}].forEach(function(profile, playerIndex) {
     var player = game.newPlayer(profile);
@@ -18,7 +17,6 @@ function newGame(metrics) {
         center: {x: metrics.canvasWidth/2, y: metrics.canvasHeight*(1/2 + 5/16)},
         spacing: {x: metrics.cardWidth, y: 0},
         cardRotation: playerTheta,
-        z: z++,
       }),
     });
     var deckSpacing = metrics.cardWidth/30;
@@ -28,7 +26,6 @@ function newGame(metrics) {
         center: {x: metrics.canvasWidth/4, y: metrics.canvasHeight*(1/2 + 5/16)},
         spacing: {x: deckSpacing, y: deckSpacing},
         cardRotation: playerTheta,
-        z: z++,
       }),
     });
     player.discardPile = game.newLocation({
@@ -37,7 +34,6 @@ function newGame(metrics) {
         center: {x: metrics.canvasWidth/2, y: metrics.canvasHeight*(1/2 + 7/16)},
         spacing: {x: metrics.cardWidth/5, y: 0},
         cardRotation: playerTheta,
-        z: z++,
       }),
     });
     function rotateLayout(layout) {
@@ -48,9 +44,25 @@ function newGame(metrics) {
     }
   });
 
+  // bases
+  (function() {
+    var baseLocation = game.newLocation({
+      visibility: true, layout: {
+        center: canvasCenter,
+        spacing: {x:0, y:0},
+        cardRotation: 0,
+      },
+    });
+    var baseProfile = {
+      name: rageData.bases[0].name,
+      type: "Base",
+    };
+    game.newCard(baseProfile, {group: baseLocation});
+  })();
+
   // create cards
   game.players.forEach(function(player) {
-    var faction = factions[0];
+    var faction = rageData.factions[0];
     faction.cards.forEach(function(cardDefinition) {
       for (var i = 0; i < cardDefinition.count; i++) {
         var cardProfile = {
@@ -86,10 +98,12 @@ function newGame(metrics) {
     y += fontSize;
     context.fillText(card.profile.name, x, y);
 
-    fontSize = fontSize * 2;
-    context.font = fontSize + "pt sans-serif";
-    y += fontSize;
-    context.fillText(card.profile.powerLevels[0].toString(), x, y);
+    if (card.profile.type === "Minion") {
+      fontSize = fontSize * 2;
+      context.font = fontSize + "pt sans-serif";
+      y += fontSize;
+      context.fillText(card.profile.powerLevels[0].toString(), x, y);
+    }
   };
   return game;
 }

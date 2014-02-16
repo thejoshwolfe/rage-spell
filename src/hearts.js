@@ -13,7 +13,6 @@ function newGame(metrics) {
 
   var game = new crage.Game(getActions);
   (function() {
-    var z = 0;
     var canvasCenter = {x: metrics.canvasWidth/2, y: metrics.canvasHeight/2};
     playerProfiles.forEach(function(profile, playerIndex) {
       var player = game.newPlayer(profile);
@@ -25,7 +24,6 @@ function newGame(metrics) {
           center: {x: metrics.canvasWidth/2, y: metrics.canvasHeight*(1/2 + 5/16)},
           spacing: {x: metrics.cardWidth*2/3, y: 0},
           cardRotation: playerTheta,
-          z: z++,
         }),
       });
       player.playSlot = game.newLocation({
@@ -34,7 +32,6 @@ function newGame(metrics) {
           center: {x: metrics.canvasWidth/2, y: metrics.canvasHeight*(1/2 + 1/16)},
           spacing: {x: 0, y: 0},
           cardRotation: 0, // keep the play pile oriented for the human to read
-          z: z++,
         }),
       });
       player.keepPile = game.newLocation({
@@ -43,7 +40,6 @@ function newGame(metrics) {
           center: {x: metrics.canvasWidth/2, y: metrics.canvasHeight*(1/2 + 7/16)},
           spacing: {x: metrics.cardWidth/3, y: 0},
           cardRotation: playerTheta,
-          z: z++,
         }),
       });
       function rotateLayout(layout) {

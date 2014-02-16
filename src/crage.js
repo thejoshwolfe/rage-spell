@@ -40,6 +40,7 @@ function Location(game, options) {
   this.game = game;
   this.visibility = options.visibility;
   this.layout = options.layout;
+  if (this.layout != null && this.layout.z == null) this.layout.z = this.game.locations.length;
 }
 Location.prototype.getCards = function() {
   var self = this;
