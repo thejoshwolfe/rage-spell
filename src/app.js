@@ -9,8 +9,8 @@ var canvas = window.document.getElementById("canvas");
 
 // all coordinates are scaled to these dimensions
 var metrics = {};
-metrics.canvasWidth = 300;
-metrics.canvasHeight = 300;
+metrics.canvasWidth = 1000;
+metrics.canvasHeight = 1000;
 
 // want to fit 20 cards across
 metrics.cardWidth = metrics.canvasWidth/20;
@@ -139,6 +139,7 @@ function renderCard(context, card, enabled, faceUp) {
   context.fill();
 
   if (faceUp) {
+    context.clip();
     game.renderCardFace(context, card);
   } else {
     // render the back of a card

@@ -59,6 +59,9 @@ Location.prototype.shuffle = function() {
     card.location.index = Math.random();
   });
 };
+Location.prototype.append = function(card) {
+  card.location = {group: this, index: this.getCards().length};
+};
 Location.prototype.getCardsInOrder = function() {
   var cards = this.getCards();
   cards.sort(function(a, b) {

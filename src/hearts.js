@@ -100,10 +100,7 @@ function newGame(metrics) {
           });
           // yoink
           game.players.forEach(function(player) {
-            getPlayedCard(player).location = {
-              group: takerPlayer.keepPile,
-              index: takerPlayer.keepPile.getCards().length,
-            };
+            takerPlayer.keepPile.append(getPlayedCard(player));
           });
           leadSuit = null;
         });

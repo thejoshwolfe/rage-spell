@@ -1,5 +1,8 @@
 var crage = require("./crage");
 var Vector = require("./vector");
+var factions = require("./factions");
+
+var handSize = 5;
 
 module.exports.newGame = newGame;
 function newGame(metrics) {
@@ -18,7 +21,7 @@ function newGame(metrics) {
         z: z++,
       }),
     });
-    var deckSpacing = metrics.cardWidth/20;
+    var deckSpacing = metrics.cardWidth/30;
     player.deck = game.newLocation({
       visibility: false,
       layout: rotateLayout({
@@ -45,6 +48,27 @@ function newGame(metrics) {
     }
   });
 
+  // create cards
+  game.players.forEach(function(player) {
+    var faction = factions[0];
+    faction.cards.forEach(function(cardDefinition) {
+      for (var i = 0; i < cardDefinition.count; i++) {
+        var cardProfile = {
+          name: cardDefinition.name,
+          type: cardDefinition.type,
+          powerLevels: cardDefinition.powerLevels,
+        };
+        game.newCard(cardProfile, {group: player.deck});
+      }
+    });
+    player.deck.shuffle();
+
+    player.deck.getCardsInOrder().slice(0, handSize).forEach(function(card) {
+      player.hand.append(card);
+    });
+  });
+
+  var turnIndex = 0;
   function getActions() {
     return [];
   }
@@ -53,7 +77,19 @@ function newGame(metrics) {
     context.fillStyle = "#050";
     context.fillRect(0, 0, metrics.canvasWidth, metrics.canvasHeight);
   };
-  game.renderCardFace = function(context) {
+  game.renderCardFace = function(context, card) {
+    var fontSize = Math.floor(metrics.cardHeight/12);
+    context.fillStyle = "#000";
+    context.font = fontSize + "pt sans-serif";
+    var x = -metrics.cardWidth/2 + metrics.cornerRadius;
+    var y = -metrics.cardHeight/2 + metrics.cornerRadius;
+    y += fontSize;
+    context.fillText(card.profile.name, x, y);
+
+    fontSize = fontSize * 2;
+    context.font = fontSize + "pt sans-serif";
+    y += fontSize;
+    context.fillText(card.profile.powerLevels[0].toString(), x, y);
   };
   return game;
 }
