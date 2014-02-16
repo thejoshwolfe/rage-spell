@@ -1,7 +1,8 @@
 rage-spell
 ==========
 
-Someday, this will be an implementation of the card game Rage Spell.
+Work in progress. demo: http://wolfesoftware.com/rage-spell/public/
 
-For now, it's [Hearts](http://en.wikipedia.org/wiki/Hearts).
-demo: http://wolfesoftware.com/rage-spell/public/
+Here's the game engine playing [Hearts](http://en.wikipedia.org/wiki/Hearts):
+http://wolfesoftware.com/rage-spell/public/#hearts
+
