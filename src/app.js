@@ -7,26 +7,15 @@ if (window.location.hash === "#hearts") {
 var Vector = require("./vector");
 var canvas = window.document.getElementById("canvas");
 
-// all coordinates are scaled to these dimensions
-var metrics = {};
-metrics.canvasWidth = 1000;
-metrics.canvasHeight = 1000;
+var game = gameModule.newGame();
 
-// want to fit 20 cards across
-metrics.cardWidth = metrics.canvasWidth/20;
-// poker size is 2.5x3.5 inches
-metrics.cardHeight = metrics.cardWidth*3.5/2.5;
-// corner radius is 1/20 the width of the card
-metrics.cornerRadius = metrics.cardWidth/20;
-metrics.borderWidth = metrics.cornerRadius;
 function mousePointToScaledPoint(point) {
   return {
-    x: point.x / canvas.width * metrics.canvasWidth,
-    y: point.y / canvas.height * metrics.canvasHeight,
+    x: point.x / canvas.width * game.canvasWidth,
+    y: point.y / canvas.height * game.canvasHeight,
   };
 }
 
-var game = gameModule.newGame(metrics);
 var cardsInZOrder;
 var controlEverything = false;
 var zoomInCard = null;
@@ -72,7 +61,7 @@ function render() {
   var context = canvas.getContext("2d");
   context.save();
 
-  context.scale(canvas.width/metrics.canvasWidth, canvas.height/metrics.canvasHeight);
+  context.scale(canvas.width/game.canvasWidth, canvas.height/game.canvasHeight);
   game.renderBackground(context);
 
   var actionCards = actions.filter(function(action) {
@@ -100,7 +89,7 @@ function render() {
     context.restore();
     // render a super huge card
     context.save();
-    var zoomFactor = metrics.cardHeight;
+    var zoomFactor = Math.max(zoomInCard.metrics.width, zoomInCard.metrics.height);
     context.scale(canvas.width/zoomFactor, canvas.height/zoomFactor);
     context.translate(zoomFactor/2, zoomFactor/2);
     renderCard(context, zoomInCard, false, true);
@@ -123,18 +112,18 @@ function renderCard(context, card, enabled, faceUp) {
 
   if (faceUp && enabled) {
     roundedCornerRectPath(context,
-        -metrics.cardWidth/2 - 2 * metrics.cornerRadius, -metrics.cardHeight/2 - 2 * metrics.cornerRadius,
-        metrics.cardWidth    + 4 * metrics.cornerRadius, metrics.cardHeight    + 4 * metrics.cornerRadius,
-        metrics.cornerRadius);
+        -card.metrics.width/2 - 2 * card.metrics.cornerRadius, -card.metrics.height/2 - 2 * card.metrics.cornerRadius,
+        card.metrics.width    + 4 * card.metrics.cornerRadius, card.metrics.height    + 4 * card.metrics.cornerRadius,
+        card.metrics.cornerRadius);
     var time = new Date().getTime() - animationReferenceTime;
     var animationIndex = Math.floor(time / animationInterval) % colorAnimation.length;
     context.fillStyle = colorAnimation[animationIndex];
     context.fill();
   }
   roundedCornerRectPath(context,
-      -metrics.cardWidth/2, -metrics.cardHeight/2,
-      metrics.cardWidth, metrics.cardHeight,
-      metrics.cornerRadius);
+      -card.metrics.width/2, -card.metrics.height/2,
+      card.metrics.width, card.metrics.height,
+      card.metrics.cornerRadius);
   context.fillStyle = "#fff";
   context.fill();
 
@@ -144,9 +133,9 @@ function renderCard(context, card, enabled, faceUp) {
   } else {
     // render the back of a card
     roundedCornerRectPath(context,
-        -metrics.cardWidth/2 + metrics.borderWidth, -metrics.cardHeight/2 + metrics.borderWidth,
-        metrics.cardWidth - metrics.borderWidth*2, metrics.cardHeight - metrics.borderWidth*2,
-        metrics.cornerRadius);
+        -card.metrics.width/2 + card.metrics.borderWidth, -card.metrics.height/2 + card.metrics.borderWidth,
+        card.metrics.width - card.metrics.borderWidth*2, card.metrics.height - card.metrics.borderWidth*2,
+        card.metrics.cornerRadius);
     context.fillStyle = "#aaf";
     context.fill();
   }
@@ -169,14 +158,14 @@ window.addEventListener("resize", function() {
 resize();
 function resize() {
   // keep the canvas the center of attention
-  if (window.innerWidth / metrics.canvasWidth < window.innerHeight / metrics.canvasHeight) {
+  if (window.innerWidth / game.canvasWidth < window.innerHeight / game.canvasHeight) {
     canvas.width = window.innerWidth;
-    canvas.height = metrics.canvasHeight * canvas.width / metrics.canvasWidth;
+    canvas.height = game.canvasHeight * canvas.width / game.canvasWidth;
     canvas.style.left = "0px";
     canvas.style.top = ((window.innerHeight - canvas.height) / 2) + "px";
   } else {
     canvas.height = window.innerHeight;
-    canvas.width = metrics.canvasWidth * canvas.height / metrics.canvasHeight;
+    canvas.width = game.canvasWidth * canvas.height / game.canvasHeight;
     canvas.style.left = ((window.innerWidth - canvas.width) / 2) + "px";
     canvas.style.top = "0px";
   }
@@ -185,10 +174,10 @@ function resize() {
 function isPointInCard(point, card) {
   // rotate this point into our world, then compare the axis-aligned bounding box.
   point = Vector.rotate(point, card.location.position, -card.location.rotation);
-  if (point.x < card.location.position.x - metrics.cardWidth/2)  return false;
-  if (point.y < card.location.position.y - metrics.cardHeight/2) return false;
-  if (point.x > card.location.position.x + metrics.cardWidth/2)  return false;
-  if (point.y > card.location.position.y + metrics.cardHeight/2) return false;
+  if (point.x < card.location.position.x - card.metrics.width/2)  return false;
+  if (point.y < card.location.position.y - card.metrics.height/2) return false;
+  if (point.x > card.location.position.x + card.metrics.width/2)  return false;
+  if (point.y > card.location.position.y + card.metrics.height/2) return false;
   return true;
 }
 canvas.addEventListener("mousedown", function(event) {

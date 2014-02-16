@@ -3,7 +3,23 @@ var frenchDeck = require("./frenchDeck");
 var Vector = require("./vector");
 
 module.exports.newGame = newGame;
-function newGame(metrics) {
+function newGame() {
+  var game = new crage.Game(getActions);
+
+  game.canvasWidth = 1000;
+  game.canvasHeight = 1000;
+
+  // want to fit 20 cards across
+  var cardWidth = game.canvasWidth/20;
+  // poker size is 2.5x3.5 inches
+  var cardHeight = cardWidth*3.5/2.5;
+  // corner radius is 1/20 the width of the card
+  var cornerRadius = cardWidth/20;
+  var borderWidth = cornerRadius;
+  var cardMetrics = {
+    width: cardWidth, height: cardHeight,
+    cornerRadius: cornerRadius, borderWidth: borderWidth,
+  };
   var playerProfiles = [
     {name: "Player 1"},
     {name: "Player 2"},
@@ -11,9 +27,8 @@ function newGame(metrics) {
     {name: "Player 4"},
   ];
 
-  var game = new crage.Game(getActions);
   (function() {
-    var canvasCenter = {x: metrics.canvasWidth/2, y: metrics.canvasHeight/2};
+    var canvasCenter = {x: game.canvasWidth/2, y: game.canvasHeight/2};
     playerProfiles.forEach(function(profile, playerIndex) {
       var player = game.newPlayer(profile);
       // tilt cards based on where the player is sitting.
@@ -21,15 +36,15 @@ function newGame(metrics) {
       player.hand = game.newLocation({
         visibility: player,
         layout: rotateLayout({
-          center: {x: metrics.canvasWidth/2, y: metrics.canvasHeight*(1/2 + 5/16)},
-          spacing: {x: metrics.cardWidth*2/3, y: 0},
+          center: {x: game.canvasWidth/2, y: game.canvasHeight*(1/2 + 5/16)},
+          spacing: {x: cardWidth*2/3, y: 0},
           cardRotation: playerTheta,
         }),
       });
       player.playSlot = game.newLocation({
         visibility: true,
         layout: rotateLayout({
-          center: {x: metrics.canvasWidth/2, y: metrics.canvasHeight*(1/2 + 1/16)},
+          center: {x: game.canvasWidth/2, y: game.canvasHeight*(1/2 + 1/16)},
           spacing: {x: 0, y: 0},
           cardRotation: 0, // keep the play pile oriented for the human to read
         }),
@@ -37,8 +52,8 @@ function newGame(metrics) {
       player.keepPile = game.newLocation({
         visibility: true,
         layout: rotateLayout({
-          center: {x: metrics.canvasWidth/2, y: metrics.canvasHeight*(1/2 + 7/16)},
-          spacing: {x: metrics.cardWidth/3, y: 0},
+          center: {x: game.canvasWidth/2, y: game.canvasHeight*(1/2 + 7/16)},
+          spacing: {x: cardWidth/3, y: 0},
           cardRotation: playerTheta,
         }),
       });
@@ -52,7 +67,7 @@ function newGame(metrics) {
   })();
 
   var deck = game.newLocation({});
-  frenchDeck.new52Cards(game, deck);
+  frenchDeck.new52Cards(game, cardMetrics, deck);
 
   // deal
   deck.shuffle();
@@ -149,14 +164,14 @@ function newGame(metrics) {
 
   game.renderBackground = function(context) {
     context.fillStyle = "#050";
-    context.fillRect(0, 0, metrics.canvasWidth, metrics.canvasHeight);
+    context.fillRect(0, 0, game.canvasWidth, game.canvasHeight);
   };
   game.renderCardFace = function(context, card) {
-    var fontSize = Math.floor(metrics.cardHeight/4);
+    var fontSize = Math.floor(cardHeight/4);
     context.fillStyle = card.profile.suit.color;
     context.font = fontSize + "pt sans-serif";
-    var x = -metrics.cardWidth/2 + metrics.cornerRadius;
-    var y = -metrics.cardHeight/2 + metrics.cornerRadius;
+    var x = -cardWidth/2 + cornerRadius;
+    var y = -cardHeight/2 + cornerRadius;
     y += fontSize;
     context.fillText(card.profile.rank.name, x, y);
     y += fontSize;

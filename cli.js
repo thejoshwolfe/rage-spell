@@ -1,3 +1,4 @@
+// TODO: this file is probably stale. delete it?
 process.stdin.setEncoding("utf8");
 
 var gameModule = require(process.argv[2]);

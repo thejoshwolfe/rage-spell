@@ -16,8 +16,8 @@ Game.prototype.newLocation = function(options) {
   this.locations.push(location);
   return location;
 };
-Game.prototype.newCard = function(profile, location) {
-  var card = new Card(this, profile, location);
+Game.prototype.newCard = function(profile, metrics, location) {
+  var card = new Card(this, profile, metrics, location);
   this.cards.push(card);
   return card;
 };
@@ -29,8 +29,9 @@ function Player(game, profile) {
 }
 
 module.exports.Card = Card;
-function Card(game, profile, location) {
+function Card(game, profile, metrics, location) {
   this.game = game;
+  this.metrics = metrics;
   this.profile = profile;
   this.location = location;
 }

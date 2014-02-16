@@ -5,25 +5,41 @@ var rageData = require("./rageData");
 var handSize = 5;
 
 module.exports.newGame = newGame;
-function newGame(metrics) {
+function newGame() {
   var game = new crage.Game(getActions);
-  var canvasCenter = {x: metrics.canvasWidth/2, y: metrics.canvasHeight/2};
+
+  game.canvasWidth = 1000;
+  game.canvasHeight = 1000;
+
+  // want to fit 20 cards across
+  var cardWidth = game.canvasWidth/20;
+  // poker size is 2.5x3.5 inches
+  var cardHeight = cardWidth*3.5/2.5;
+  // corner radius is 1/20 the width of the card
+  var cornerRadius = cardWidth/20;
+  var borderWidth = cornerRadius;
+  var cardMetrics = {
+    width: cardWidth, height: cardHeight,
+    cornerRadius: cornerRadius, borderWidth: borderWidth,
+  };
+
+  var canvasCenter = {x: game.canvasWidth/2, y: game.canvasHeight/2};
   [{}, {}].forEach(function(profile, playerIndex) {
     var player = game.newPlayer(profile);
     var playerTheta = Math.PI*playerIndex;
     player.hand = game.newLocation({
       visibility: player,
       layout: rotateLayout({
-        center: {x: metrics.canvasWidth/2, y: metrics.canvasHeight*(1/2 + 5/16)},
-        spacing: {x: metrics.cardWidth, y: 0},
+        center: {x: game.canvasWidth/2, y: game.canvasHeight*(1/2 + 5/16)},
+        spacing: {x: cardWidth, y: 0},
         cardRotation: playerTheta,
       }),
     });
-    var deckSpacing = metrics.cardWidth/30;
+    var deckSpacing = cardWidth/30;
     player.deck = game.newLocation({
       visibility: false,
       layout: rotateLayout({
-        center: {x: metrics.canvasWidth/4, y: metrics.canvasHeight*(1/2 + 5/16)},
+        center: {x: game.canvasWidth/4, y: game.canvasHeight*(1/2 + 5/16)},
         spacing: {x: deckSpacing, y: deckSpacing},
         cardRotation: playerTheta,
       }),
@@ -31,8 +47,8 @@ function newGame(metrics) {
     player.discardPile = game.newLocation({
       visibility: true,
       layout: rotateLayout({
-        center: {x: metrics.canvasWidth/2, y: metrics.canvasHeight*(1/2 + 7/16)},
-        spacing: {x: metrics.cardWidth/5, y: 0},
+        center: {x: game.canvasWidth/2, y: game.canvasHeight*(1/2 + 7/16)},
+        spacing: {x: cardWidth/5, y: 0},
         cardRotation: playerTheta,
       }),
     });
@@ -46,6 +62,10 @@ function newGame(metrics) {
 
   // bases
   (function() {
+    var baseMetrics = {
+      width: cardWidth*2, height: cardHeight,
+      cornerRadius: cornerRadius, borderWidth: borderWidth,
+    };
     var baseLocation = game.newLocation({
       visibility: true, layout: {
         center: canvasCenter,
@@ -57,7 +77,7 @@ function newGame(metrics) {
       name: rageData.bases[0].name,
       type: "Base",
     };
-    game.newCard(baseProfile, {group: baseLocation});
+    game.newCard(baseProfile, baseMetrics, {group: baseLocation});
   })();
 
   // create cards
@@ -70,7 +90,7 @@ function newGame(metrics) {
           type: cardDefinition.type,
           powerLevels: cardDefinition.powerLevels,
         };
-        game.newCard(cardProfile, {group: player.deck});
+        game.newCard(cardProfile, cardMetrics, {group: player.deck});
       }
     });
     player.deck.shuffle();
@@ -87,14 +107,14 @@ function newGame(metrics) {
 
   game.renderBackground = function(context) {
     context.fillStyle = "#050";
-    context.fillRect(0, 0, metrics.canvasWidth, metrics.canvasHeight);
+    context.fillRect(0, 0, game.canvasWidth, game.canvasHeight);
   };
   game.renderCardFace = function(context, card) {
-    var fontSize = Math.floor(metrics.cardHeight/12);
+    var fontSize = Math.floor((card.metrics.width+card.metrics.height)/18);
     context.fillStyle = "#000";
     context.font = fontSize + "pt sans-serif";
-    var x = -metrics.cardWidth/2 + metrics.cornerRadius;
-    var y = -metrics.cardHeight/2 + metrics.cornerRadius;
+    var x = -card.metrics.width/2 + card.metrics.cornerRadius;
+    var y = -card.metrics.height/2 + card.metrics.cornerRadius;
     y += fontSize;
     context.fillText(card.profile.name, x, y);
 

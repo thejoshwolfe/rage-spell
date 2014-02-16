@@ -13,7 +13,7 @@ var suits = [
   return suit;
 });
 module.exports.new52Cards = new52Cards;
-function new52Cards(game, locationGroup) {
+function new52Cards(game, metrics, locationGroup) {
   var result = [];
   suits.forEach(function(suit) {
     "A 2 3 4 5 6 7 8 9 10 J Q K".split(" ").forEach(function(rankName, rankIndex) {
@@ -27,7 +27,7 @@ function new52Cards(game, locationGroup) {
           numberAceHigh: rankNumberAceHigh,
         },
       };
-      game.newCard(profile, {group: locationGroup});
+      game.newCard(profile, metrics, {group: locationGroup});
     });
   });
   return result;
