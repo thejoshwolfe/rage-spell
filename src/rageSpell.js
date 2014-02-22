@@ -132,11 +132,7 @@ function newGame() {
       }, player.profile.rotation),
     });
 
-    var buttonProfile = {
-      name: "Done",
-      type: "Button",
-    };
-    game.newCard(buttonProfile, buttonMetrics, {group: player.buttonBar});
+    player.doneButton = game.newCard({name: "Done", type: "Button"}, buttonMetrics, {});
   });
 
   // action state machine
@@ -162,6 +158,15 @@ function newGame() {
       player.hand.getCards().forEach(function(card) {
         result.push(new crage.Action(game, player, {card: card}, function() {
           selectCard(card);
+          player.doneButton.location = {};
+        }));
+      });
+      // done with playing cards
+      player.doneButton.location = {group: player.buttonBar};
+      player.buttonBar.getCards().forEach(function(buttonCard) {
+        result.push(new crage.Action(game, player, {card: buttonCard}, function() {
+          player.doneButton.location = {};
+          turnIndex = (turnIndex + 1) % game.players.length;
         }));
       });
     } else {
@@ -170,7 +175,6 @@ function newGame() {
         result.push(new crage.Action(game, player, {card: base}, function() {
           base.playSlots[turnIndex].append(selectedCard);
           selectedCard = null;
-          turnIndex = (turnIndex + 1) % game.players.length;
         }));
       });
       // un select the card

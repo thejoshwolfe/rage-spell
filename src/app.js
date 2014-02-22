@@ -49,7 +49,7 @@ function computeLocationGroupLocations(locationGroup) {
 }
 function computeLocations() {
   game.locations.forEach(computeLocationGroupLocations);
-  cardsInZOrder = game.cards.slice(0);
+  cardsInZOrder = game.cards.filter(function(card) { return card.location.group != null; });
   cardsInZOrder.sort(function(cardA, cardB) {
     return crage.operatorCompare(cardA.location.z, cardB.location.z);
   });
@@ -115,8 +115,8 @@ function renderCard(context, card, enabled, faceUp) {
 
   if (faceUp && enabled) {
     roundedCornerRectPath(context,
-        -card.metrics.width/2 - 2 * card.metrics.cornerRadius, -card.metrics.height/2 - 2 * card.metrics.cornerRadius,
-        card.metrics.width    + 4 * card.metrics.cornerRadius, card.metrics.height    + 4 * card.metrics.cornerRadius,
+        -card.metrics.width/2 - 2 * card.metrics.borderWidth, -card.metrics.height/2 - 2 * card.metrics.borderWidth,
+        card.metrics.width    + 4 * card.metrics.borderWidth, card.metrics.height    + 4 * card.metrics.borderWidth,
         card.metrics.cornerRadius);
     var time = new Date().getTime() - animationReferenceTime;
     var animationIndex = Math.floor(time / animationInterval) % colorAnimation.length;
