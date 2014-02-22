@@ -30,6 +30,7 @@ function newGame() {
     layout.spacing = Vector.rotate(layout.spacing, {x:0, y:0}, rotation);
     return layout;
   }
+  var handY = game.canvasHeight*(1/2 + 5/16);
   [{}, {}].forEach(function(profile, playerIndex) {
     profile.id = game.players.length;
     profile.rotation = Math.PI*playerIndex;
@@ -37,27 +38,27 @@ function newGame() {
     player.hand = game.newLocation({
       visibility: player,
       layout: rotateLayout({
-        center: {x: game.canvasWidth/2, y: game.canvasHeight*(1/2 + 5/16)},
+        center: {x: game.canvasWidth/2, y: handY},
         spacing: {x: cardWidth, y: 0},
-        cardRotation: profile.rotation,
-      }, profile.rotation),
+        cardRotation: player.profile.rotation,
+      }, player.profile.rotation),
     });
     var deckSpacing = cardWidth/30;
     player.deck = game.newLocation({
       visibility: false,
       layout: rotateLayout({
-        center: {x: game.canvasWidth/4, y: game.canvasHeight*(1/2 + 5/16)},
+        center: {x: game.canvasWidth/4, y: handY},
         spacing: {x: deckSpacing, y: deckSpacing},
-        cardRotation: profile.rotation,
-      }, profile.rotation),
+        cardRotation: player.profile.rotation,
+      }, player.profile.rotation),
     });
     player.discardPile = game.newLocation({
       visibility: true,
       layout: rotateLayout({
         center: {x: game.canvasWidth/2, y: game.canvasHeight*(1/2 + 7/16)},
         spacing: {x: cardWidth/5, y: 0},
-        cardRotation: profile.rotation,
-      }, profile.rotation),
+        cardRotation: player.profile.rotation,
+      }, player.profile.rotation),
     });
   });
 
@@ -115,13 +116,34 @@ function newGame() {
     });
   });
 
+  // create buttons
+  var buttonHeight = cardHeight/2;
+  var buttonMetrics = {
+    width: cardWidth*3/2, height: cardHeight/2,
+    cornerRadius: cornerRadius*4, borderWidth: borderWidth,
+  };
+  game.players.forEach(function(player) {
+    player.buttonBar = game.newLocation({
+      visibility: player,
+      layout: rotateLayout({
+        center: {x: game.canvasWidth/2+cardWidth*handSize/2+buttonMetrics.width, y: handY},
+        spacing: {x: 0, y: buttonHeight},
+        cardRotation: player.profile.rotation,
+      }, player.profile.rotation),
+    });
+
+    var buttonProfile = {
+      name: "Done",
+      type: "Button",
+    };
+    game.newCard(buttonProfile, buttonMetrics, {group: player.buttonBar});
+  });
+
   var turnIndex = 0;
   var nextActions = null;
   function getActions() {
     var result = [];
-    if (nextActions != null) {
-      return nextActions;
-    }
+    if (nextActions != null) return nextActions;
     var player = game.players[turnIndex];
     player.hand.getCards().forEach(function(card) {
       result.push(new crage.Action(game, player, {card: card}, function() {
@@ -152,7 +174,13 @@ function newGame() {
     context.fillRect(0, 0, game.canvasWidth, game.canvasHeight);
   };
   game.renderCardFace = function(context, card) {
-    var fontSize = Math.floor((card.metrics.width+card.metrics.height)/18);
+    var fontSize;
+    if (card.profile.type === "Button") {
+      fontSize = (card.metrics.height - card.metrics.cornerRadius*2);
+    } else {
+      // leave room for multiple lines and stuff
+      fontSize = Math.floor((card.metrics.width+card.metrics.height)/18);
+    }
     context.fillStyle = "#000";
     context.font = fontSize + "pt sans-serif";
     var x = -card.metrics.width/2 + card.metrics.cornerRadius;
