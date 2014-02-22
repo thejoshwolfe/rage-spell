@@ -139,36 +139,49 @@ function newGame() {
     game.newCard(buttonProfile, buttonMetrics, {group: player.buttonBar});
   });
 
+  // action state machine
   var turnIndex = 0;
-  var nextActions = null;
+  var selectedCard = null;
+  function selectCard(card) {
+    selectedCard = card;
+    // offset the card upward
+    card.location.positionOffset = Vector.rotate(
+        {x:0, y: -card.metrics.height/3},
+        {x:0,y:0},
+        card.location.rotation);
+  }
+  function unselectCard() {
+    selectedCard.location.positionOffset = null;
+    selectedCard = null;
+  }
   function getActions() {
     var result = [];
-    if (nextActions != null) return nextActions;
     var player = game.players[turnIndex];
-    player.hand.getCards().forEach(function(card) {
-      result.push(new crage.Action(game, player, {card: card}, function() {
-        card.location.positionOffset = Vector.rotate(
-            {x:0, y: -card.metrics.height/3},
-            {x:0,y:0},
-            card.location.rotation);
-        nextActions = [];
-        bases.forEach(function(base) {
-          nextActions.push(new crage.Action(game, player, {card: base}, function() {
-            nextActions = null;
-            base.playSlots[turnIndex].append(card);
-            turnIndex = (turnIndex + 1) % game.players.length;
-          }));
-        });
-        // undo
-        nextActions.push(new crage.Action(game, player, {card: card, excludeFromRandom: true}, function() {
-          nextActions = null;
-          card.location.positionOffset = null;
+    if (selectedCard == null) {
+      // select a card in your hand
+      player.hand.getCards().forEach(function(card) {
+        result.push(new crage.Action(game, player, {card: card}, function() {
+          selectCard(card);
         }));
+      });
+    } else {
+      // play the selected card on a base
+      bases.forEach(function(base) {
+        result.push(new crage.Action(game, player, {card: base}, function() {
+          base.playSlots[turnIndex].append(selectedCard);
+          selectedCard = null;
+          turnIndex = (turnIndex + 1) % game.players.length;
+        }));
+      });
+      // un select the card
+      result.push(new crage.Action(game, player, {card: selectedCard, excludeFromRandom: true}, function() {
+        unselectCard();
       }));
-    });
+    }
     return result;
   }
 
+  // rendering
   game.renderBackground = function(context) {
     context.fillStyle = "#050";
     context.fillRect(0, 0, game.canvasWidth, game.canvasHeight);
@@ -195,5 +208,6 @@ function newGame() {
       context.fillText(card.profile.powerLevels[0].toString(), x, y);
     }
   };
+
   return game;
 }
