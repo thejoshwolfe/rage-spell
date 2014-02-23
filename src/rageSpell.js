@@ -132,55 +132,113 @@ function newGame() {
       }, player.profile.rotation),
     });
 
-    player.doneButton = game.newCard({name: "Done", type: "Button"}, buttonMetrics, {});
+    player.doneButton = game.newCard({name: "[set elsewhere]", type: "Button"}, buttonMetrics, {});
   });
 
   // action state machine
   var turnIndex = 0;
-  var selectedCard = null;
-  function selectCard(card) {
-    selectedCard = card;
-    // offset the card upward
+  var playPhase = "play";
+  var turnPhase = playPhase;
+  var selectedCardToPlay = null;
+  var discardPhase = "discard";
+  var selectedCardsToDiscard = [];
+  var drawPhase = "draw";
+  function offsetCard(card, direction) {
     card.location.positionOffset = Vector.rotate(
-        {x:0, y: -card.metrics.height/3},
+        {x:0, y: direction * card.metrics.height/3},
         {x:0,y:0},
         card.location.rotation);
-  }
-  function unselectCard() {
-    selectedCard.location.positionOffset = null;
-    selectedCard = null;
   }
   function getActions() {
     var result = [];
     var player = game.players[turnIndex];
-    if (selectedCard == null) {
-      // select a card in your hand
-      player.hand.getCards().forEach(function(card) {
-        result.push(new crage.Action(game, player, {card: card}, function() {
-          selectCard(card);
+    switch (turnPhase) {
+      case playPhase:
+        if (selectedCardToPlay == null) {
+          // select a card in your hand
+          player.hand.getCards().forEach(function(card) {
+            result.push(new crage.Action(game, player, {card: card}, function() {
+              selectedCardToPlay = card;
+              // offset the card upward
+              offsetCard(card, -1);
+              player.doneButton.location = {};
+            }));
+          });
+          // done with playing cards
+          player.doneButton.profile.name = "Done";
+          player.doneButton.location = {group: player.buttonBar};
+          result.push(new crage.Action(game, player, {card: player.doneButton}, function() {
+            player.doneButton.location = {};
+            turnPhase = discardPhase;
+          }));
+        } else {
+          // play the selected card on a base
+          bases.forEach(function(base) {
+            result.push(new crage.Action(game, player, {card: base}, function() {
+              base.playSlots[turnIndex].append(selectedCardToPlay);
+              selectedCardToPlay = null;
+            }));
+          });
+          // un select the card
+          var actionProfile = {card: selectedCardToPlay, excludeFromRandom: true};
+          result.push(new crage.Action(game, player, actionProfile, function() {
+            selectedCardToPlay.location.positionOffset = null;
+            selectedCardToPlay = null;
+          }));
+        }
+        break;
+      case discardPhase:
+        // select/unselect cards for discard
+        player.hand.getCards().forEach(function(card) {
+          var actionProfile = {
+            card: card,
+            excludeFromRandom: selectedCardsToDiscard.indexOf(card) !== -1,
+          };
+          result.push(new crage.Action(game, player, actionProfile, function() {
+            var index = selectedCardsToDiscard.indexOf(card);
+            if (index === -1) {
+              selectedCardsToDiscard.push(card);
+              // offset card downward
+              offsetCard(card, 1);
+            } else {
+              selectedCardsToDiscard.splice(index, 1);
+              card.location.positionOffset = null;
+            }
+          }));
+        });
+        // done with discarding
+        player.doneButton.profile.name = "Discard";
+        player.doneButton.location = {group: player.buttonBar};
+        result.push(new crage.Action(game, player, {card: player.doneButton}, function() {
+          selectedCardsToDiscard.forEach(function(card) {
+            player.discardPile.append(card);
+          });
+          selectedCardsToDiscard = [];
           player.doneButton.location = {};
+          turnPhase = drawPhase;
         }));
-      });
-      // done with playing cards
-      player.doneButton.location = {group: player.buttonBar};
-      player.buttonBar.getCards().forEach(function(buttonCard) {
-        result.push(new crage.Action(game, player, {card: buttonCard}, function() {
-          player.doneButton.location = {};
-          turnIndex = (turnIndex + 1) % game.players.length;
-        }));
-      });
-    } else {
-      // play the selected card on a base
-      bases.forEach(function(base) {
-        result.push(new crage.Action(game, player, {card: base}, function() {
-          base.playSlots[turnIndex].append(selectedCard);
-          selectedCard = null;
-        }));
-      });
-      // un select the card
-      result.push(new crage.Action(game, player, {card: selectedCard, excludeFromRandom: true}, function() {
-        unselectCard();
-      }));
+        break;
+      case drawPhase:
+        var deckCards = player.deck.getCardsInOrder();
+        if (deckCards.length > 0 && player.hand.getCards().length < handSize) {
+          var topDeckCard = deckCards[deckCards.length - 1];
+          // draw 1 card at a time
+          player.doneButton.profile.name = "Draw";
+          player.doneButton.location = {group: player.buttonBar};
+          result.push(new crage.Action(game, player, {card: player.doneButton}, function() {
+            player.hand.append(topDeckCard);
+          }));
+        } else {
+          // done with drawing
+          player.doneButton.profile.name = "Done";
+          player.doneButton.location = {group: player.buttonBar};
+          result.push(new crage.Action(game, player, {card: player.doneButton}, function() {
+            player.doneButton.location = {};
+            turnIndex = (turnIndex + 1) % game.players.length;
+            turnPhase = playPhase;
+          }));
+        }
+        break;
     }
     return result;
   }
