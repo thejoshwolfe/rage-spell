@@ -100,7 +100,9 @@ function newGame() {
   game.players.forEach(function(player) {
     var faction = rageData.factions[0];
     faction.cards.forEach(function(cardDefinition) {
-      for (var i = 0; i < cardDefinition.count; i++) {
+      var count = cardDefinition.count;
+      if (count == null) count = 1;
+      for (var i = 0; i < count; i++) {
         var cardProfile = {
           name: cardDefinition.name,
           type: cardDefinition.type,
@@ -219,14 +221,26 @@ function newGame() {
         }));
         break;
       case drawPhase:
-        var deckCards = player.deck.getCardsInOrder();
-        if (deckCards.length > 0 && player.hand.getCards().length < handSize) {
-          var topDeckCard = deckCards[deckCards.length - 1];
+        if (player.hand.getCards().length < handSize) {
           // draw 1 card at a time
           player.doneButton.profile.name = "Draw";
           player.doneButton.location = {group: player.buttonBar};
           result.push(new crage.Action(game, player, {card: player.doneButton}, function() {
-            player.hand.append(topDeckCard);
+            var deckCards = player.deck.getCardsInOrder();
+            if (deckCards.length === 0) {
+              // reshuffle discard pile as new deck
+              player.discardPile.getCards().forEach(function(card) {
+                card.location = {group: player.deck};
+              });
+              player.deck.shuffle();
+              deckCards = player.deck.getCardsInOrder();
+            }
+            if (deckCards.length !== 0) {
+              var topDeckCard = deckCards[deckCards.length - 1];
+              player.hand.append(topDeckCard);
+            } else {
+              // played all cards
+            }
           }));
         } else {
           // done with drawing
